@@ -139,8 +139,6 @@ static void oclintVersionPrinter()
     cout << "  Built " << __DATE__ << " (" << __TIME__ << ").\n";
 }
 
-extern llvm::cl::OptionCategory OCLintOptionCategory;
-
 int main(int argc, const char **argv)
 {
     llvm::cl::AddExtraVersionPrinter(&oclintVersionPrinter);

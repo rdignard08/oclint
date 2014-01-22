@@ -8,7 +8,7 @@ using namespace oclint;
 
 TEST(VersionTest, VersionString)
 {
-    EXPECT_THAT(Version::identifier(), StrEq("0.8rc1"));
+    EXPECT_THAT(Version::identifier(), StrEq("0.8"));
 }
 
 int main(int argc, char **argv)

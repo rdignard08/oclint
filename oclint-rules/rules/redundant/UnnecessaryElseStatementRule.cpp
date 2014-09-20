@@ -8,8 +8,6 @@ using namespace oclint;
 class UnnecessaryElseStatementRule : public AbstractASTVisitorRule<UnnecessaryElseStatementRule>
 {
 private:
-    static RuleSet rules;
-
     bool areAllBranchesReturn(CompoundStmt *compoundStmt)
     {
         for (CompoundStmt::body_iterator body = compoundStmt->body_begin(),
@@ -74,17 +72,17 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "unnecessary else statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual void setUp()
+    virtual void setUp() override
     {
         _visitedIfStmt = new vector<IfStmt *>();
     }
@@ -95,9 +93,9 @@ public:
         {
             return true;
         }
-        
+
         vector<IfStmt *> ifStmts;
-        Stmt *lastElseStmt = NULL;
+        Stmt* lastElseStmt = nullptr;
         bool stopSign = false;
 
         _visitedIfStmt->push_back(ifStmt);
@@ -128,4 +126,4 @@ public:
     }
 };
 
-RuleSet UnnecessaryElseStatementRule::rules(new UnnecessaryElseStatementRule());
+static RuleSet rules(new UnnecessaryElseStatementRule());

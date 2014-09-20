@@ -66,17 +66,13 @@ public:
 class ObjCAssignIvarOutsideAccessorsRule:
     public AbstractASTVisitorRule<ObjCAssignIvarOutsideAccessorsRule>
 {
-
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "ivar assignment outside accessors or init";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -92,10 +88,8 @@ public:
 
         // Now go through all the ivar accesses and see
         // if they match the method name as a getter, setter, or init method
-        for (vector<ObjCIvarRefExpr*>::iterator it = checker.getInstances().begin();
-            it != checker.getInstances().end();
-            ++it) {
-            ObjCIvarRefExpr* access = *it;
+        for (auto& access : checker.getInstances())
+        {
             // ivarName is _foo or foo or foo_
             string ivarName = access->getDecl()->getNameAsString();
             // getterName is foo. Note this won't work for
@@ -106,7 +100,7 @@ public:
             if((selectorName != getterName
               && selectorName != setterName)
               && selectorName.substr(0, 4) != "init") {
-                addViolation(*it, this);
+                addViolation(access, this);
             }
         }
         return true;
@@ -115,7 +109,5 @@ public:
 };
 
 // Instantiate the rule
-RuleSet ObjCAssignIvarOutsideAccessorsRule::rules(
-    new ObjCAssignIvarOutsideAccessorsRule()
-);
+static RuleSet rules(new ObjCAssignIvarOutsideAccessorsRule());
 

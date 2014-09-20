@@ -44,13 +44,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
  * SOFTWARE.
  */
+#include "oclint/CompilerInstance.h"
 
-#include <clang/Frontend/FrontendActions.h>
 #include <clang/Basic/TargetInfo.h>
-
+#include <clang/Frontend/FrontendActions.h>
 #include <clang/StaticAnalyzer/Frontend/FrontendActions.h>
 
-#include "oclint/CompilerInstance.h"
 #include "oclint/Options.h"
 
 using namespace oclint;
@@ -70,13 +69,13 @@ void CompilerInstance::start()
     assert(!getFrontendOpts().ShowHelp && "Client must handle '-help'!");
     assert(!getFrontendOpts().ShowVersion && "Client must handle '-version'!");
 
-    setTarget(clang::TargetInfo::CreateTargetInfo(getDiagnostics(), &getTargetOpts()));
+    setTarget(clang::TargetInfo::CreateTargetInfo(getDiagnostics(), getInvocation().TargetOpts));
     if (!hasTarget())
     {
         return;// false;
     }
 
-    getTarget().setForcedLangOptions(getLangOpts());
+    getTarget().adjust(getLangOpts());
 
     for (const auto& input : getFrontendOpts().Inputs)
     {

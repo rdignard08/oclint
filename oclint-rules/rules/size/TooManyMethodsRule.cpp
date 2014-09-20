@@ -10,22 +10,20 @@ using namespace oclint;
 class TooManyMethodsRule : public AbstractASTVisitorRule<TooManyMethodsRule>
 {
 private:
-    static RuleSet rules;
-
     int _threshold;
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "too many methods";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual void setUp()
+    virtual void setUp() override
     {
         _threshold = RuleConfiguration::intForKey("TOO_MANY_METHODS", 30);
     }
@@ -55,4 +53,4 @@ public:
     }
 };
 
-RuleSet TooManyMethodsRule::rules(new TooManyMethodsRule());
+static RuleSet rules(new TooManyMethodsRule());

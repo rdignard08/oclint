@@ -9,16 +9,13 @@ using namespace oclint;
 
 class EmptyWhileStatementRule : public AbstractEmptyBlockStmtRule<EmptyWhileStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "empty while statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -29,4 +26,4 @@ public:
     }
 };
 
-RuleSet EmptyWhileStatementRule::rules(new EmptyWhileStatementRule());
+static RuleSet rules(new EmptyWhileStatementRule());

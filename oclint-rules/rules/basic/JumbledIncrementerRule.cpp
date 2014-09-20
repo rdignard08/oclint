@@ -8,8 +8,6 @@ using namespace oclint;
 class JumbledIncrementerRule : public AbstractASTVisitorRule<JumbledIncrementerRule>
 {
 private:
-    static RuleSet rules;
-
     VarDecl *varDeclFromInitStmt(Stmt *initStmt)
     {
         DeclStmt *declStmt = dyn_cast_or_null<DeclStmt>(initStmt);
@@ -17,7 +15,7 @@ private:
         {
             return dyn_cast_or_null<VarDecl>(declStmt->getSingleDecl());
         }
-        return NULL;
+        return nullptr;
     }
 
     ValueDecl *valueDeclFromIncExpr(Expr *incExpr)
@@ -32,7 +30,7 @@ private:
                 return declRefExpr->getDecl();
             }
         }
-        return NULL;
+        return nullptr;
     }
 
     bool isInnerIncMatchingOuterInit(Expr *incExpr, Stmt *initStmt)
@@ -43,12 +41,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "jumbled incrementer";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -76,4 +74,4 @@ public:
     }
 };
 
-RuleSet JumbledIncrementerRule::rules(new JumbledIncrementerRule());
+static RuleSet rules(new JumbledIncrementerRule());

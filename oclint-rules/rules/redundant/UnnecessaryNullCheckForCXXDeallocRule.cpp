@@ -96,21 +96,18 @@ static bool IsADeleteBlock(ASTContext& context, const Stmt& stmt, const Expr* ex
 class UnnecessaryNullCheckForCXXDeallocRule :
     public oclint::AbstractASTVisitorRule<UnnecessaryNullCheckForCXXDeallocRule>
 {
-private:
-    static oclint::RuleSet rules;
-
 public:
-    virtual const std::string name() const
+    virtual const std::string name() const override
     {
         return "unnecessary null check for cxxdealloc";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return oclint::LANG_CXX;
     }
@@ -135,5 +132,4 @@ public:
     }
 };
 
-oclint::RuleSet UnnecessaryNullCheckForCXXDeallocRule::rules(
-    new UnnecessaryNullCheckForCXXDeallocRule);
+static oclint::RuleSet rules(new UnnecessaryNullCheckForCXXDeallocRule);

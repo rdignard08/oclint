@@ -8,16 +8,13 @@ using namespace oclint;
 class DefaultLabelNotLastInSwitchStatementRule :
     public AbstractASTVisitorRule<DefaultLabelNotLastInSwitchStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "default label not last in switch statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -42,5 +39,4 @@ public:
     }
 };
 
-RuleSet DefaultLabelNotLastInSwitchStatementRule::rules(
-    new DefaultLabelNotLastInSwitchStatementRule());
+static RuleSet rules(new DefaultLabelNotLastInSwitchStatementRule());

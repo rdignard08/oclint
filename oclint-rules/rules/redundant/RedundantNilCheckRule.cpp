@@ -10,8 +10,6 @@ using namespace oclint;
 class RedundantNilCheckRule : public AbstractNullCheckRule<RedundantNilCheckRule>
 {
 private:
-    static RuleSet rules;
-
     bool isRedundantNilCheck(BinaryOperator *binaryOperator)
     {
         if(binaryOperator->getOpcode() == BO_LAnd && isNeNullCheck(binaryOperator->getLHS()))
@@ -41,17 +39,17 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "redundant nil check";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_OBJC;
     }
@@ -67,4 +65,4 @@ public:
     }
 };
 
-RuleSet RedundantNilCheckRule::rules(new RedundantNilCheckRule());
+static RuleSet rules(new RedundantNilCheckRule());

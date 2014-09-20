@@ -9,8 +9,6 @@ class RedundantIfStatementRule :
     public AbstractASTVisitorRule<RedundantIfStatementRule>
 {
 private:
-    static RuleSet rules;
-
     template<typename nodeType>
     nodeType* extractStmt(Stmt *fromStmt)
     {
@@ -25,7 +23,7 @@ private:
                 return extractStmt<nodeType>(*(dyn_cast<CompoundStmt>(fromStmt)->body_begin()));
             }
         }
-        return NULL;
+        return nullptr;
     }
 
     bool isCIntegerViolated(Expr *thenExpr, Expr *elseExpr)
@@ -77,12 +75,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "redundant if statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -103,4 +101,4 @@ public:
     }
 };
 
-RuleSet RedundantIfStatementRule::rules(new RedundantIfStatementRule());
+static RuleSet rules(new RedundantIfStatementRule());

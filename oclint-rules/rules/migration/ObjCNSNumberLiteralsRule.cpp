@@ -8,8 +8,6 @@ using namespace oclint;
 class ObjCNSNumberLiteralsRule : public AbstractASTVisitorRule<ObjCNSNumberLiteralsRule>
 {
 private:
-    static RuleSet rules;
-
     bool isCharLiteral(Expr *expr, string &selectorString)
     {
         if (selectorString == "numberWithChar:" && expr && isa<ImplicitCastExpr>(expr))
@@ -24,7 +22,7 @@ private:
     template <typename T>
     bool isLiteralOf(Expr *expr, string &selectorString, map<string, string> &methodArgTypeMap)
     {
-        map<string, string>::iterator selectedSelector = methodArgTypeMap.find(selectorString);
+        auto selectedSelector = methodArgTypeMap.find(selectorString);
         return expr && isa<T>(expr) &&
             selectedSelector != methodArgTypeMap.end() &&
             selectedSelector->second == expr->getType().getAsString();
@@ -74,17 +72,17 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "replace with number literal";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_OBJC;
     }
@@ -103,4 +101,4 @@ public:
 
 };
 
-RuleSet ObjCNSNumberLiteralsRule::rules(new ObjCNSNumberLiteralsRule());
+static RuleSet rules(new ObjCNSNumberLiteralsRule());

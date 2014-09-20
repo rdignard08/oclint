@@ -1,8 +1,9 @@
-#include <llvm/Support/YAMLParser.h>
-#include <llvm/Support/SourceMgr.h>
-
 #include "oclint/ConfigFile.h"
-#include "oclint/Debug.h"
+
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/YAMLParser.h>
+
+#include "oclint/Logger.h"
 
 using namespace oclint;
 using namespace oclint::option;
@@ -78,29 +79,30 @@ struct ScalarEnumerationTraits<TriState>
 oclint::option::ConfigFile::ConfigFile(const std::string &path)
     : _path(path), _maxP1(INT_MIN), _maxP2(INT_MIN), _maxP3(INT_MIN)
 {
-    debug::emit("Reading config file: ");
-    debug::emitLine(path.c_str());
+    LOG_DEBUG("Reading config file: ");
+    LOG_DEBUG_LINE(path.c_str());
 
-    llvm::error_code errorCode = llvm::MemoryBuffer::getFile(path, _buffer);
-    if (errorCode)
+    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> buffer =
+        llvm::MemoryBuffer::getFile(path);
+    if (buffer)
     {
-        debug::emitLine(errorCode.message().c_str());
-    }
-    else
-    {
-        const llvm::StringRef &content = _buffer->getBuffer();
+        const llvm::StringRef &content = buffer.get()->getBuffer();
 
         const std::string whitespace(" \t\f\v\n\r");
         if (content.str().find_last_not_of(whitespace) == std::string::npos) {
             // Config file is only whitespace.
             // Prevent LLVM crash:
             // http://lists.cs.uiuc.edu/pipermail/llvmbugs/2013-May/028254.html
-            debug::emitLine("Skip parsing empty config file");
+            LOG_DEBUG_LINE("Skip parsing empty config file");
             return;
         }
 
         llvm::yaml::Input yin(content);
         yin >> *this;
+    }
+    else
+    {
+        LOG_DEBUG_LINE(buffer.getError().message().c_str());
     }
 }
 
@@ -183,6 +185,11 @@ llvm::Optional<bool> oclint::option::ConfigFile::clangChecker() const
     return createOptionalBool(_clangChecker);
 }
 
+llvm::Optional<bool> oclint::option::ConfigFile::allowDuplicatedViolations() const
+{
+    return createOptionalBool(_allowDuplicatedViolations);
+}
+
 void oclint::option::ConfigFile::mapping(llvm::yaml::IO& inputOutput)
 {
     inputOutput.mapOptional("rules", _rules);
@@ -195,4 +202,5 @@ void oclint::option::ConfigFile::mapping(llvm::yaml::IO& inputOutput)
     inputOutput.mapOptional("max-priority-2", _maxP2);
     inputOutput.mapOptional("max-priority-3", _maxP3);
     inputOutput.mapOptional("enable-clang-static-analyzer", _clangChecker);
+    inputOutput.mapOptional("allow-duplicated-violations", _allowDuplicatedViolations);
 }

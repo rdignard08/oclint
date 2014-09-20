@@ -17,8 +17,6 @@ using namespace oclint;
 class CyclomaticComplexityRule : public AbstractASTVisitorRule<CyclomaticComplexityRule>
 {
 private:
-    static RuleSet rules;
-
     void applyDecl(Decl *decl)
     {
         int ccn = getCyclomaticComplexity(decl);
@@ -34,12 +32,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "high cyclomatic complexity";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -57,4 +55,4 @@ public:
     }
 };
 
-RuleSet CyclomaticComplexityRule::rules(new CyclomaticComplexityRule());
+static RuleSet rules(new CyclomaticComplexityRule());

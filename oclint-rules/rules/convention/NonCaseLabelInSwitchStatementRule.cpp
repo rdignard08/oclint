@@ -27,16 +27,13 @@ class NonCaseLabelInSwitchStatementRule :
         }
     };
 
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "non case label in switch statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -55,4 +52,4 @@ public:
     }
 };
 
-RuleSet NonCaseLabelInSwitchStatementRule::rules(new NonCaseLabelInSwitchStatementRule());
+static RuleSet rules(new NonCaseLabelInSwitchStatementRule());

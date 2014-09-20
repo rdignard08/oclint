@@ -8,8 +8,6 @@ using namespace oclint;
 class RedundantLocalVariableRule : public AbstractASTVisitorRule<RedundantLocalVariableRule>
 {
 private:
-    static RuleSet rules;
-
     NamedDecl *extractReturnDeclRef(CompoundStmt *compoundStmt)
     {
         Stmt *lastStmt = (Stmt *)*(compoundStmt->body_end() - 1);
@@ -29,7 +27,7 @@ private:
 
             }
         }
-        return NULL;
+        return nullptr;
     }
 
     NamedDecl *extractNamedDecl(CompoundStmt *compoundStmt)
@@ -40,16 +38,16 @@ private:
         {
             return dyn_cast<NamedDecl>(declStmt->getSingleDecl());
         }
-        return NULL;
+        return nullptr;
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "redundant local variable";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -70,4 +68,4 @@ public:
     }
 };
 
-RuleSet RedundantLocalVariableRule::rules(new RedundantLocalVariableRule());
+static RuleSet rules(new RedundantLocalVariableRule());

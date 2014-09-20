@@ -42,8 +42,6 @@ class ParameterReassignmentRule : public AbstractASTVisitorRule<ParameterReassig
     };
 
 private:
-    static RuleSet rules;
-
     void locateParamNames(Decl *decl, vector<string> &names)
     {
         if (!names.empty())
@@ -58,12 +56,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "parameter reassignment";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -102,4 +100,4 @@ public:
     }
 };
 
-RuleSet ParameterReassignmentRule::rules(new ParameterReassignmentRule());
+static RuleSet rules(new ParameterReassignmentRule());

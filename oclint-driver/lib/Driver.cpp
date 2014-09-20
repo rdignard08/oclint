@@ -44,6 +44,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
  * SOFTWARE.
  */
+#include "oclint/Driver.h"
 
 #include <unistd.h>
 
@@ -66,11 +67,10 @@
 #include <clang/Tooling/CompilationDatabase.h>
 #include <clang/Tooling/Tooling.h>
 
-#include "oclint/DiagnosticDispatcher.h"
 #include "oclint/CompilerInstance.h"
-#include "oclint/Debug.h"
-#include "oclint/Driver.h"
+#include "oclint/DiagnosticDispatcher.h"
 #include "oclint/GenericException.h"
+#include "oclint/Logger.h"
 #include "oclint/Options.h"
 #include "oclint/ViolationSet.h"
 
@@ -81,9 +81,8 @@ typedef std::vector<std::pair<std::string, clang::tooling::CompileCommand>> Comp
 static clang::driver::Driver *newDriver(clang::DiagnosticsEngine *diagnostics,
     const char *binaryName)
 {
-    const std::string defaultOutputName = "a.out";
-    clang::driver::Driver *driver = new clang::driver::Driver(binaryName,
-        llvm::sys::getDefaultTargetTriple(), defaultOutputName, *diagnostics);
+    clang::driver::Driver *driver =
+        new clang::driver::Driver(binaryName, llvm::sys::getDefaultTargetTriple(), *diagnostics);
     driver->setTitle("OCLint");
     return driver;
 }
@@ -118,7 +117,7 @@ static clang::CompilerInvocation *newInvocation(clang::DiagnosticsEngine *diagno
     const llvm::opt::ArgStringList &argStringList)
 {
     assert(!argStringList.empty() && "Must at least contain the program name!");
-    clang::CompilerInvocation *invocation = new clang::CompilerInvocation;
+    auto invocation = new clang::CompilerInvocation;
     clang::CompilerInvocation::CreateFromArgs(*invocation,
         argStringList.data() + 1, argStringList.data() + argStringList.size(), *diagnostics);
     invocation->getFrontendOpts().DisableFree = false;
@@ -161,7 +160,7 @@ static clang::CompilerInvocation *newCompilerInvocation(std::string &mainExecuta
     std::vector<std::string> &unadjustedCmdLine, bool runClangChecker = false)
 {
     // Prepare for command lines, and convert to old-school argv
-    llvm::OwningPtr<clang::tooling::ArgumentsAdjuster> argumentsAdjusterPtr(
+    std::unique_ptr<clang::tooling::ArgumentsAdjuster> argumentsAdjusterPtr(
         new clang::tooling::ClangSyntaxOnlyAdjuster());
     std::vector<std::string> commandLine = argumentsAdjusterPtr->Adjust(unadjustedCmdLine);
     assert(!commandLine.empty());
@@ -180,6 +179,7 @@ static clang::CompilerInvocation *newCompilerInvocation(std::string &mainExecuta
     {
         argv.push_back(commandLine[cmdIndex].c_str());
     }
+    argv.push_back("-D__OCLINT__");
 
     // create diagnostic engine
     llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOpts =
@@ -192,12 +192,12 @@ static clang::CompilerInvocation *newCompilerInvocation(std::string &mainExecuta
 
     // create driver
     const char *const mainBinaryPath = argv[0];
-    const llvm::OwningPtr<clang::driver::Driver> driver(
+    const std::unique_ptr<clang::driver::Driver> driver(
         newDriver(&diagnosticsEngine, mainBinaryPath));
     driver->setCheckInputsExist(false);
 
     // create compilation invocation
-    const llvm::OwningPtr<clang::driver::Compilation> compilation(
+    const std::unique_ptr<clang::driver::Compilation> compilation(
         driver->BuildCompilation(llvm::makeArrayRef(argv)));
     const llvm::opt::ArgStringList *const cc1Args = getCC1Arguments(compilation.get());
     return newInvocation(&diagnosticsEngine, *cc1Args);
@@ -212,7 +212,7 @@ static clang::FileManager *newFileManager()
 static oclint::CompilerInstance *newCompilerInstance(clang::CompilerInvocation *compilerInvocation,
     clang::FileManager *fileManager, bool runClangChecker = false)
 {
-    oclint::CompilerInstance *compilerInstance = new oclint::CompilerInstance();
+    auto compilerInstance = new oclint::CompilerInstance();
     compilerInstance->setInvocation(compilerInvocation);
     compilerInstance->setFileManager(fileManager);
     compilerInstance->createDiagnostics(new DiagnosticDispatcher(runClangChecker));
@@ -228,6 +228,23 @@ static oclint::CompilerInstance *newCompilerInstance(clang::CompilerInvocation *
     return compilerInstance;
 }
 
+static void printCompileCommandDebugInfo(
+    std::pair<std::string, clang::tooling::CompileCommand> &compileCommand)
+{
+    LOG_DEBUG_LINE("-----------------------");
+    LOG_DEBUG("File: ");
+    LOG_DEBUG_LINE(compileCommand.first.c_str());
+    LOG_DEBUG("Directory: ");
+    LOG_DEBUG_LINE(compileCommand.second.Directory.c_str());
+    LOG_DEBUG("Command: ");
+    for (auto& flag : compileCommand.second.CommandLine)
+    {
+        LOG_DEBUG(flag.c_str());
+        LOG_DEBUG(" ");
+    }
+    LOG_DEBUG_LINE("");
+}
+
 static void constructCompilersAndFileManagers(std::vector<oclint::CompilerInstance *> &compilers,
     std::vector<clang::FileManager *> &fileManagers,
     CompileCommandPairs &compileCommands,
@@ -235,8 +252,10 @@ static void constructCompilersAndFileManagers(std::vector<oclint::CompilerInstan
 {
     for (auto &compileCommand : compileCommands)
     {
-        debug::emit("Compiling ");
-        debug::emit(compileCommand.first.c_str());
+        printCompileCommandDebugInfo(compileCommand);
+
+        LOG_VERBOSE("Compiling ");
+        LOG_VERBOSE(compileCommand.first.c_str());
         if (chdir(compileCommand.second.Directory.c_str()))
         {
             throw oclint::GenericException("Cannot change dictionary into \"" +
@@ -251,15 +270,15 @@ static void constructCompilersAndFileManagers(std::vector<oclint::CompilerInstan
         compiler->start();
         if (!compiler->getDiagnostics().hasErrorOccurred() && compiler->hasASTContext())
         {
-            debug::emit(" - Success");
+            LOG_VERBOSE(" - Success");
             compilers.push_back(compiler);
             fileManagers.push_back(fileManager);
         }
         else
         {
-            debug::emit(" - Failed");
+            LOG_VERBOSE(" - Failed");
         }
-        debug::emitLine("");
+        LOG_VERBOSE_LINE("");
     }
 }
 
@@ -269,8 +288,8 @@ static void invokeClangStaticAnalyzer(
 {
     for (auto &compileCommand : compileCommands)
     {
-        debug::emit("Clang Static Analyzer ");
-        debug::emit(compileCommand.first.c_str());
+        LOG_VERBOSE("Clang Static Analyzer ");
+        LOG_VERBOSE(compileCommand.first.c_str());
         if (chdir(compileCommand.second.Directory.c_str()))
         {
             throw oclint::GenericException("Cannot change dictionary into \"" +
@@ -286,16 +305,16 @@ static void invokeClangStaticAnalyzer(
         compiler->start();
         if (!compiler->getDiagnostics().hasErrorOccurred() && compiler->hasASTContext())
         {
-            debug::emit(" - Done");
+            LOG_VERBOSE(" - Done");
         }
         else
         {
-            debug::emit(" - Finished with Failure");
+            LOG_VERBOSE(" - Finished with Failure");
         }
         compiler->end();
         compiler->resetAndLeakFileManager();
         fileManager->clearStatCaches();
-        debug::emitLine("");
+        LOG_VERBOSE_LINE("");
     }
 }
 

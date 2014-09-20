@@ -49,28 +49,26 @@ public:
 
 class MisplacedNullCheckRule : public MisplacedNullCheckBaseRule
 {
-private:
-    static RuleSet rules;
-
 protected:
-    virtual bool hasVariableInExpr(string variableOfInterest, Expr *expr)
+    virtual bool hasVariableInExpr(string variableOfInterest, Expr* expr)
+        override
     {
         VariableOfInterestInMemberExpr seekingVariable;
         return seekingVariable.hasVariableInExpr(variableOfInterest, expr, this);
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "misplaced null check";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 1;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_C | LANG_CXX;
     }
@@ -78,32 +76,30 @@ public:
 
 class MisplacedNilCheckRule : public MisplacedNullCheckBaseRule
 {
-private:
-    static RuleSet rules;
-
 protected:
-    virtual bool hasVariableInExpr(string variableOfInterest, Expr *expr)
+    virtual bool hasVariableInExpr(string variableOfInterest, Expr* expr)
+        override
     {
         VariableOfInterestInObjCMessageExpr seekingVariable;
         return seekingVariable.hasVariableInExpr(variableOfInterest, expr, this);
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "misplaced nil check";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_OBJC;
     }
 };
 
-RuleSet MisplacedNullCheckRule::rules(new MisplacedNullCheckRule());
-RuleSet MisplacedNilCheckRule::rules(new MisplacedNilCheckRule());
+static RuleSet rulesMisplacedNull(new MisplacedNullCheckRule());
+static RuleSet rulesMisplacedNil(new MisplacedNilCheckRule());

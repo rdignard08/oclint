@@ -13,22 +13,18 @@ using namespace oclint;
 class ObjCVerifySubclassMustImplementRule : public
     AbstractASTVisitorRule<ObjCVerifySubclassMustImplementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "subclass must implement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 1;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_OBJC;
     }
@@ -57,4 +53,4 @@ public:
 };
 
 
-RuleSet ObjCVerifySubclassMustImplementRule::rules(new ObjCVerifySubclassMustImplementRule());
+static RuleSet rules(new ObjCVerifySubclassMustImplementRule());

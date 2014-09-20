@@ -9,16 +9,13 @@ using namespace oclint;
 
 class EmptyCatchStatementRule : public AbstractEmptyBlockStmtRule<EmptyCatchStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "empty catch statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -34,4 +31,4 @@ public:
     }
 };
 
-RuleSet EmptyCatchStatementRule::rules(new EmptyCatchStatementRule());
+static RuleSet rules(new EmptyCatchStatementRule());

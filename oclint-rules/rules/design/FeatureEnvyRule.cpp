@@ -92,7 +92,7 @@ class FeatureEnvyRule : public AbstractASTVisitorRule<FeatureEnvyRule>
 
         ObjCInterfaceDecl *getClassInterface(ObjCMethodDecl *decl)
         {
-            if (isa<ObjCProtocolDecl>(decl->getDeclContext()))
+            if (!decl || isa<ObjCProtocolDecl>(decl->getDeclContext()))
             {
                 return nullptr;
             }
@@ -166,8 +166,6 @@ class FeatureEnvyRule : public AbstractASTVisitorRule<FeatureEnvyRule>
     };
 
 private:
-    static RuleSet rules;
-
     string description(string methodName, string enviedClass)
     {
         ostringstream stream;
@@ -185,12 +183,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "feature envy";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -213,4 +211,4 @@ public:
     // }
 };
 
-RuleSet FeatureEnvyRule::rules(new FeatureEnvyRule());
+static RuleSet rules(new FeatureEnvyRule());

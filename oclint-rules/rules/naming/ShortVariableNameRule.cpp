@@ -12,7 +12,6 @@ using namespace oclint;
 class ShortVariableNameRule : public AbstractASTVisitorRule<ShortVariableNameRule>
 {
 private:
-    static RuleSet rules;
     std::stack<VarDecl *> _suppressVarDecls;
 
     void clearVarDeclsStack()
@@ -53,12 +52,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "short variable name";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -125,4 +124,4 @@ public:
     }
 };
 
-RuleSet ShortVariableNameRule::rules(new ShortVariableNameRule());
+static RuleSet rules(new ShortVariableNameRule());

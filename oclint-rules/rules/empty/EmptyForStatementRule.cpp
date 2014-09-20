@@ -9,16 +9,13 @@ using namespace oclint;
 
 class EmptyForStatementRule : public AbstractEmptyBlockStmtRule<EmptyForStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "empty for statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -34,4 +31,4 @@ public:
     }
 };
 
-RuleSet EmptyForStatementRule::rules(new EmptyForStatementRule());
+static RuleSet rules(new EmptyForStatementRule());

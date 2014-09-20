@@ -8,8 +8,6 @@ using namespace oclint;
 class BrokenOddnessCheckRule : public AbstractASTVisitorRule<BrokenOddnessCheckRule>
 {
 private:
-    static RuleSet rules;
-
     bool isIntegerLiteral(Expr *expr, int value)
     {
         IntegerLiteral *integerLiteral = dyn_cast_or_null<IntegerLiteral>(expr);
@@ -30,12 +28,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "broken oddness check";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -53,4 +51,4 @@ public:
     }
 };
 
-RuleSet BrokenOddnessCheckRule::rules(new BrokenOddnessCheckRule());
+static RuleSet rules(new BrokenOddnessCheckRule());

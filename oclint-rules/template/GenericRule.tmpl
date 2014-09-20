@@ -8,24 +8,21 @@ using namespace oclint;
 
 class {{RULE_CLASS_NAME}}Rule : public RuleBase
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "{{RULE_NAME}}";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return {{RULE_PRIORITY}};
     }
 
-    virtual void apply()
+    virtual void apply() override
     {
     }
 
 };
 
-RuleSet {{RULE_CLASS_NAME}}Rule::rules(new {{RULE_CLASS_NAME}}Rule());
+static RuleSet rules(new {{RULE_CLASS_NAME}}Rule());

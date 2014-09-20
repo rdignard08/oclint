@@ -10,8 +10,6 @@ using namespace oclint;
 class TooManyParametersRule : public AbstractASTVisitorRule<TooManyParametersRule>
 {
 private:
-    static RuleSet rules;
-
     unsigned int _threshold;
 
     template <typename T>
@@ -27,17 +25,17 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "too many parameters";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual void setUp()
+    virtual void setUp() override
     {
         _threshold = RuleConfiguration::intForKey("TOO_MANY_PARAMETERS", 10);
     }
@@ -57,4 +55,4 @@ public:
     }
 };
 
-RuleSet TooManyParametersRule::rules(new TooManyParametersRule());
+static RuleSet rules(new TooManyParametersRule());

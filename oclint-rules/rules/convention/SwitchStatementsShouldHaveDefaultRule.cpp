@@ -8,16 +8,13 @@ using namespace oclint;
 class SwitchStatementsShouldHaveDefaultRule :
     public AbstractASTVisitorRule<SwitchStatementsShouldHaveDefaultRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "switch statements should have default";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -28,7 +25,7 @@ public:
         {
             return true;
         }
-        
+
         SwitchCase *currentSwitchCase = switchStmt->getSwitchCaseList();
         bool hasDefault = false;
         while (currentSwitchCase)
@@ -49,4 +46,4 @@ public:
     }
 };
 
-RuleSet SwitchStatementsShouldHaveDefaultRule::rules(new SwitchStatementsShouldHaveDefaultRule());
+static RuleSet rules(new SwitchStatementsShouldHaveDefaultRule());

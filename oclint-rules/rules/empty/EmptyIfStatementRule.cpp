@@ -9,16 +9,13 @@ using namespace oclint;
 
 class EmptyIfStatementRule : public AbstractEmptyBlockStmtRule<EmptyIfStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "empty if statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -29,4 +26,4 @@ public:
     }
 };
 
-RuleSet EmptyIfStatementRule::rules(new EmptyIfStatementRule());
+static RuleSet rules(new EmptyIfStatementRule());

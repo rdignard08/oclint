@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ctime>
 #include <string>
+#include <memory>
 
 #include <clang/Tooling/CommonOptionsParser.h>
 
@@ -11,12 +12,14 @@
 #include "oclint/Driver.h"
 #include "oclint/GenericException.h"
 #include "oclint/Options.h"
+#include "oclint/RawResults.h"
 #include "oclint/Reporter.h"
-#include "oclint/Results.h"
+#include "oclint/ResultCollector.h"
 #include "oclint/RuleBase.h"
 #include "oclint/RuleSet.h"
 #include "oclint/RulesetFilter.h"
 #include "oclint/RulesetBasedAnalyzer.h"
+#include "oclint/UniqueResults.h"
 #include "oclint/Version.h"
 #include "oclint/ViolationSet.h"
 #include "oclint/Violation.h"
@@ -51,7 +54,7 @@ ostream* outStream()
         return &cout;
     }
     string output = oclint::option::outputPath();
-    ofstream *out = new ofstream(output.c_str());
+    auto out = new ofstream(output.c_str());
     if (!out->is_open())
     {
         throw oclint::GenericException("cannot open report output file " + output);
@@ -91,6 +94,20 @@ void printViolationsExceedThresholdError(const oclint::Results *results)
         << "[" << oclint::option::maxP2() << "] ";
     cerr << "P3=" << results->numberOfViolationsWithPriority(3)
         << "[" << oclint::option::maxP3() << "] " <<endl;
+}
+
+std::unique_ptr<oclint::Results> getResults()
+{
+    std::unique_ptr<oclint::Results> results;
+    if (oclint::option::allowDuplicatedViolations())
+    {
+        results.reset(new oclint::RawResults(*oclint::ResultCollector::getInstance()));
+    }
+    else
+    {
+        results.reset(new oclint::UniqueResults(*oclint::ResultCollector::getInstance()));
+    }
+    return results;
 }
 
 enum ExitCode
@@ -139,10 +156,12 @@ static void oclintVersionPrinter()
     cout << "  Built " << __DATE__ << " (" << __TIME__ << ").\n";
 }
 
+extern llvm::cl::OptionCategory OCLintOptionCategory;
+
 int main(int argc, const char **argv)
 {
     llvm::cl::AddExtraVersionPrinter(&oclintVersionPrinter);
-    CommonOptionsParser optionsParser(argc, argv);
+    CommonOptionsParser optionsParser(argc, argv, OCLintOptionCategory);
     oclint::option::process(argv[0]);
 
     int prepareStatus = prepare();
@@ -167,12 +186,13 @@ int main(int argc, const char **argv)
         printErrorLine(e.what());
         return ERROR_WHILE_PROCESSING;
     }
-    oclint::Results *results = oclint::Results::getInstance();
+
+    std::unique_ptr<oclint::Results> results(std::move(getResults()));
 
     try
     {
         ostream *out = outStream();
-        reporter()->report(results, *out);
+        reporter()->report(results.get(), *out);
         disposeOutStream(out);
     }
     catch (const exception& e)
@@ -181,9 +201,9 @@ int main(int argc, const char **argv)
         return ERROR_WHILE_REPORTING;
     }
 
-    if (numberOfViolationsExceedThreshold(results))
+    if (numberOfViolationsExceedThreshold(results.get()))
     {
-        printViolationsExceedThresholdError(results);
+        printViolationsExceedThresholdError(results.get());
         return VIOLATIONS_EXCEED_THRESHOLD;
     }
     return SUCCESS;

@@ -17,8 +17,6 @@ using namespace oclint;
 class NPathComplexityRule : public AbstractASTVisitorRule<NPathComplexityRule>
 {
 private:
-    static RuleSet rules;
-
     void applyDecl(Decl *decl)
     {
         if (decl->hasBody())
@@ -40,12 +38,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "high npath complexity";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -63,4 +61,4 @@ public:
     }
 };
 
-RuleSet NPathComplexityRule::rules(new NPathComplexityRule());
+static RuleSet rules(new NPathComplexityRule());

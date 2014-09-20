@@ -1,3 +1,4 @@
+#include "oclint/Results.h"
 #include "oclint/Reporter.h"
 #include "oclint/RuleBase.h"
 #include "oclint/Version.h"
@@ -8,18 +9,18 @@ using namespace oclint;
 class TextReporter : public Reporter
 {
 public:
-    virtual const std::string name() const
+    virtual const std::string name() const override
     {
         return "text";
     }
 
-    virtual void report(Results *results, std::ostream &out)
+    virtual void report(Results* results, std::ostream& out) override
     {
         if (results->hasErrors())
         {
             writeCompilerDiagnostics(out, results->allErrors(),
-                "Compiler Errors:\n(please aware that these errors "
-                "will prevent OCLint from analyzing those source code)");
+                "Compiler Errors:\n(please be aware that these errors "
+                "will prevent OCLint from analyzing this source code)");
         }
         if (results->hasWarnings())
         {

@@ -8,8 +8,6 @@ using namespace oclint;
 class MultipleUnaryOperatorRule : public AbstractASTVisitorRule<MultipleUnaryOperatorRule>
 {
 private:
-    static RuleSet rules;
-
     bool isTargetUnaryOperator(UnaryOperator *unaryOperator)
     {
         return unaryOperator->getOpcode() == UO_LNot ||
@@ -19,12 +17,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "multiple unary operator";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -50,4 +48,4 @@ public:
     }
 };
 
-RuleSet MultipleUnaryOperatorRule::rules(new MultipleUnaryOperatorRule());
+static RuleSet rules(new MultipleUnaryOperatorRule());

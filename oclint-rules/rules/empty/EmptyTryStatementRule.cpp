@@ -9,16 +9,13 @@ using namespace oclint;
 
 class EmptyTryStatementRule : public AbstractEmptyBlockStmtRule<EmptyTryStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "empty try statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -34,4 +31,4 @@ public:
     }
 };
 
-RuleSet EmptyTryStatementRule::rules(new EmptyTryStatementRule());
+static RuleSet rules(new EmptyTryStatementRule());

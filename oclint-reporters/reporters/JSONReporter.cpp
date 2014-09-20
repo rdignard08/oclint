@@ -1,5 +1,6 @@
 #include <ctime>
 
+#include "oclint/Results.h"
 #include "oclint/Reporter.h"
 #include "oclint/RuleBase.h"
 #include "oclint/Version.h"
@@ -10,12 +11,12 @@ using namespace oclint;
 class JSONReporter : public Reporter
 {
 public:
-    virtual const std::string name() const
+    virtual const std::string name() const override
     {
         return "json";
     }
 
-    virtual void report(Results *results, std::ostream &out)
+    virtual void report(Results* results, std::ostream& out) override
     {
         out << "{";
         writeHeader(out, Version::identifier());
@@ -41,7 +42,7 @@ public:
     {
         writeKeyValue(out, "version", version);
         writeKeyValue(out, "url", "http://oclint.org");
-        time_t now = time(0);
+        time_t now = time(nullptr);
         writeKeyValue(out, "timestamp", now);
     }
 

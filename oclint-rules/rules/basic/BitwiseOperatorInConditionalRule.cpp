@@ -8,22 +8,18 @@ using namespace oclint;
 
 class BitwiseOperatorInConditionalRule : public AbstractASTMatcherRule
 {
-
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "bitwise operator in conditional";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
 
-    virtual void callback(const MatchFinder::MatchResult &result)
+    virtual void callback(const MatchFinder::MatchResult& result) override
     {
         const IfStmt *ifStmt = result.Nodes.getNodeAs<IfStmt>("ifStmt");
         if (ifStmt)
@@ -51,7 +47,7 @@ public:
         }
     }
 
-    virtual void setUpMatcher()
+    virtual void setUpMatcher() override
     {
         StatementMatcher biOpMatcher = binaryOperator(
             anyOf(hasOperatorName("&"), hasOperatorName("|"), hasOperatorName("^")));
@@ -80,4 +76,4 @@ public:
 
 };
 
-RuleSet BitwiseOperatorInConditionalRule::rules(new BitwiseOperatorInConditionalRule());
+static RuleSet rules(new BitwiseOperatorInConditionalRule());

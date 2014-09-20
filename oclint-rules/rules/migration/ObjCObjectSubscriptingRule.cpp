@@ -9,8 +9,6 @@ using namespace oclint;
 class ObjCObjectSubscriptingRule : public AbstractASTVisitorRule<ObjCObjectSubscriptingRule>
 {
 private:
-    static RuleSet rules;
-
     bool isArrayGetSelector(Expr *expr, string &selectorString)
     {
         vector<string> arrayGetSelectors;
@@ -52,17 +50,17 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "replace with object subscripting";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_OBJC;
     }
@@ -86,4 +84,4 @@ public:
 
 };
 
-RuleSet ObjCObjectSubscriptingRule::rules(new ObjCObjectSubscriptingRule());
+static RuleSet rules(new ObjCObjectSubscriptingRule());

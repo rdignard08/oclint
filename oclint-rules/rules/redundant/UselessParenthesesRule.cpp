@@ -8,8 +8,6 @@ using namespace oclint;
 class UselessParenthesesRule : public AbstractASTVisitorRule<UselessParenthesesRule>
 {
 private:
-    static RuleSet rules;
-
     void addParenExprToViolation(Expr *expr)
     {
         if (expr && isa<ParenExpr>(expr))
@@ -19,12 +17,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "useless parentheses";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -51,4 +49,4 @@ public:
     }
 };
 
-RuleSet UselessParenthesesRule::rules(new UselessParenthesesRule());
+static RuleSet rules(new UselessParenthesesRule());

@@ -10,16 +10,13 @@ using namespace oclint;
 
 class NestedBlockDepthRule : public AbstractASTVisitorRule<NestedBlockDepthRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "deep nested block";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -39,4 +36,4 @@ public:
     }
 };
 
-RuleSet NestedBlockDepthRule::rules(new NestedBlockDepthRule());
+static RuleSet rules(new NestedBlockDepthRule());

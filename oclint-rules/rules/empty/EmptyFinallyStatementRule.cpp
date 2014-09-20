@@ -9,16 +9,13 @@ using namespace oclint;
 
 class EmptyFinallyStatementRule : public AbstractEmptyBlockStmtRule<EmptyFinallyStatementRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "empty finally statement";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -29,4 +26,4 @@ public:
     }
 };
 
-RuleSet EmptyFinallyStatementRule::rules(new EmptyFinallyStatementRule());
+static RuleSet rules(new EmptyFinallyStatementRule());

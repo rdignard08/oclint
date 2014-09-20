@@ -88,16 +88,13 @@ static bool isAnyReturnStmt(const Stmt& stmt)
 
 class DeadCodeRule : public AbstractASTVisitorRule<DeadCodeRule>
 {
-private:
-    static RuleSet rules;
-
 public:
-    virtual const std::string name() const
+    virtual const std::string name() const override
     {
         return "dead code";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -120,4 +117,4 @@ public:
     }
 };
 
-RuleSet DeadCodeRule::rules(new DeadCodeRule());
+static RuleSet rules(new DeadCodeRule());

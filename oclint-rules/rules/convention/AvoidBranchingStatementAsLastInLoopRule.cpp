@@ -9,8 +9,6 @@ class AvoidBranchingStatementAsLastInLoopRule :
     public AbstractASTVisitorRule<AvoidBranchingStatementAsLastInLoopRule>
 {
 private:
-    static RuleSet rules;
-
     bool isBranchingStatement(Stmt *stmt)
     {
         return stmt && (isa<BreakStmt>(stmt) || isa<ContinueStmt>(stmt) || isa<ReturnStmt>(stmt));
@@ -36,12 +34,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "avoid branching statement as last in loop";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 2;
     }
@@ -75,5 +73,4 @@ public:
     }
 };
 
-RuleSet AvoidBranchingStatementAsLastInLoopRule::rules(
-    new AvoidBranchingStatementAsLastInLoopRule());
+static RuleSet rules(new AvoidBranchingStatementAsLastInLoopRule());

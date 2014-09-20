@@ -17,8 +17,9 @@ private:
     // Location to save found ivar accesses
     bool _foundSuperCall;
 public:
-
-    explicit ContainsCallToSuperMethod (string selectorString) : _selector(selectorString)  {
+    explicit ContainsCallToSuperMethod(string selectorString)
+        : _selector(std::move(selectorString))
+    {
         _foundSuperCall = false;
     }
 
@@ -40,14 +41,14 @@ public:
 class ObjCVerifyMustCallSuperRule : public AbstractASTVisitorRule<ObjCVerifyMustCallSuperRule>
 {
 private:
-    static RuleSet rules;
-
     bool declRequiresSuperCall(ObjCMethodDecl* decl) {
         if(decl->isOverriding()) {
             SmallVector<const ObjCMethodDecl*, 4> overridden;
             decl->getOverriddenMethods(overridden);
-            for(auto it = overridden.begin(), ite = overridden.end(); it != ite; ++it) {
-                if(declHasEnforceAttribute(*it, *this)) {
+            for (auto& elem : overridden)
+            {
+                if (declHasEnforceAttribute(elem, *this))
+                {
                     return true;
                 }
             }
@@ -56,17 +57,17 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "must call super";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 1;
     }
 
-    virtual unsigned int supportedLanguages() const
+    virtual unsigned int supportedLanguages() const override
     {
         return LANG_OBJC;
     }
@@ -92,4 +93,4 @@ public:
 };
 
 
-RuleSet ObjCVerifyMustCallSuperRule::rules(new ObjCVerifyMustCallSuperRule());
+static RuleSet rules(new ObjCVerifyMustCallSuperRule());

@@ -1,8 +1,10 @@
 #include <sstream>
+
+#include <clang/AST/Attr.h>
+
 #include "oclint/AbstractASTVisitorRule.h"
 #include "oclint/RuleSet.h"
 #include "oclint/util/ASTUtil.h"
-#include <clang/AST/Attr.h>
 
 using namespace std;
 using namespace clang;
@@ -11,8 +13,6 @@ using namespace oclint;
 class UnusedMethodParameterRule : public AbstractASTVisitorRule<UnusedMethodParameterRule>
 {
 private:
-    static RuleSet rules;
-
     bool isInNonTemplateFunction(Decl *varDecl)
     {
         FunctionDecl *decl = dyn_cast_or_null<FunctionDecl>(varDecl->getLexicalDeclContext());
@@ -122,12 +122,12 @@ private:
     }
 
 public:
-    virtual const string name() const
+    virtual const string name() const override
     {
         return "unused method parameter";
     }
 
-    virtual int priority() const
+    virtual int priority() const override
     {
         return 3;
     }
@@ -147,4 +147,4 @@ public:
     }
 };
 
-RuleSet UnusedMethodParameterRule::rules(new UnusedMethodParameterRule());
+static RuleSet rules(new UnusedMethodParameterRule());

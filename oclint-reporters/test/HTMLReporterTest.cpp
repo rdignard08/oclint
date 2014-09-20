@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include "ReportTestResults.h"
 #include "HTMLReporter.cpp"
 
 using namespace ::testing;
@@ -19,11 +20,6 @@ public:
 class HTMLReporterTest : public ::testing::Test
 {
 protected:
-    virtual void setUp()
-    {
-        HTMLReporter reporter;
-    }
-
     HTMLReporter reporter;
 };
 
@@ -43,7 +39,7 @@ TEST_F(HTMLReporterTest, WriteHead)
 
 TEST_F(HTMLReporterTest, WriteSummaryTable)
 {
-    Results *restults = Results::getInstance();
+    Results *restults = getTestResults();
     std::ostringstream oss;
     reporter.writeSummaryTable(oss, *restults);
     EXPECT_THAT(oss.str(), HasSubstr("<th>Total Files</th><th>Files with Violations</th>"

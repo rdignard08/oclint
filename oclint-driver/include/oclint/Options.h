@@ -31,6 +31,8 @@ namespace option
     bool showEnabledRules();
     bool enableGlobalAnalysis();
     bool enableClangChecker();
+    bool allowDuplicatedViolations();
+    bool enableVerbose();
 } // end namespace option
 } // end namespace oclint
 

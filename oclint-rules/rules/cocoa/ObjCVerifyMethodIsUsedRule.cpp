@@ -1,5 +1,5 @@
 #include <clang/AST/Attr.h>
-
+#include <iostream>
 #include "oclint/AbstractASTVisitorRule.h"
 #include "oclint/RuleSet.h"
 #include "oclint/helper/EnforceHelper.h"

@@ -1,6 +1,6 @@
 SET(LIST_OF_RULES
     ObjCVerifyIsEqualHash
-    ObjCVerifyMethodIsUsedRule
+    ObjCVerifyMethodIsUsed
     ObjCVerifyMustCallSuper
     ObjCVerifySubclassMustImplement
     ObjCVerifyProhibitedCall

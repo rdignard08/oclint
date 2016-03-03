@@ -16,13 +16,13 @@ private:
     bool methodsAreEqual(ObjCMethodDecl* declaration1, ObjCMethodDecl* declaration2) {
 //        bool ret = memcmp((void*)declaration1, (void*)declaration2, sizeof(ObjCMethodDecl)) == 0;
         bool ret = declaration1->isClassMethod() == declaration2->isClassMethod() && declaration1->getSelector() == declaration2->getSelector();
-        cout << "returning " << declaration1->getSelector().getAsString() << " is " << ret << " equal to " << declaration2->getSelector().getAsString() << endl;
+        cerr << "returning " << declaration1->getSelector().getAsString() << " is " << ret << " equal to " << declaration2->getSelector().getAsString() << endl;
         return ret;
     }
 
     bool containerDeclaresMethod(ObjCContainerDecl* interface, ObjCMethodDecl* method) {
 
-        cout << "testing interface " << interface->getNameAsString() << " and method " << method->getSelector().getAsString() << endl;
+        cerr << "testing interface " << interface->getNameAsString() << " and method " << method->getSelector().getAsString() << endl;
 
         // check the methods
         
@@ -153,12 +153,12 @@ public:
                 }
                 Stmt* body = (*internalIterator)->getBody();
                 
-                cout << (*internalIterator)->getSelector().getAsString() << " body is " << endl;
-                body->dumpColor();
+                cerr << (*internalIterator)->getSelector().getAsString() << " body is " << endl;
+                body->dump();
                 
                 vector<Stmt*>* statements = collectMethodStatements(body);
                 
-                cout << "statement count is " << statements->size() << endl;
+                cerr << "statement count is " << statements->size() << endl;
                 
                 for (auto statementIterator : *statements) {
                     Stmt* statement = statementIterator;
@@ -197,8 +197,8 @@ public:
                             }
                         }
                     }
-                    statement->dumpColor();
-                    cout << "Testing statement for method " << (*iterator)->getSelector().getAsString() << " used? " << usedInternally << endl;
+                    statement->dump();
+                    cerr << "Testing statement for method " << (*iterator)->getSelector().getAsString() << " used? " << usedInternally << endl;
                 }
                 
             }

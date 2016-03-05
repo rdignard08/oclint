@@ -126,7 +126,8 @@ public:
             for (ObjCInterfaceDecl* interface = implementation->getClassInterface(); interface; interface = interface->getSuperClass()) {
                 ObjCInterfaceDecl* definition = interface->getDefinition();
                 if (definition) {
-                    if (interfaceDeclaresMethod(definition, *iterator)) {
+                    declaredPublically = interfaceDeclaresMethod(definition, *iterator);
+                    if (declaredPublically) {
                         break;
                     }
                 }

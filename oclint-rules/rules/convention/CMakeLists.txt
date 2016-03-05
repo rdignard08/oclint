@@ -8,7 +8,6 @@ SET(LIST_OF_RULES
     NonCaseLabelInSwitchStatement
     ObjCAssignIvarOutsideAccessors
     ParameterReassignment
-    PreferEarlyExit
     SwitchStatementsShouldHaveDefault
     CoveredSwitchStatementsDontNeedDefault
     TooFewBranchesInSwitchStatement

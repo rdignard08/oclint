@@ -13,25 +13,38 @@ using namespace oclint;
 class ObjCVerifyMethodIsUsedRule : public AbstractASTVisitorRule<ObjCVerifyMethodIsUsedRule>
 {
 private:
-    bool methodsAreEqual(ObjCMethodDecl* declaration1, ObjCMethodDecl* declaration2) {
-        return declaration1->isClassMethod() == declaration2->isClassMethod() && declaration1->getSelector() == declaration2->getSelector();
+    bool methodSelectorsAreEqual(ObjCMethodDecl* method1, ObjCMethodDecl* method2) {
+        return method1->getSelector() == method2->getSelector();
+    }
+    
+    bool methodsAreEqual(ObjCMethodDecl* method1, ObjCMethodDecl* method2) {
+        return method1->isClassMethod() == method2->isClassMethod() && methodSelectorsAreEqual(method1, method2);
+    }
+    
+    bool propertyIncludesMethod(ObjCPropertyDecl* property, ObjCMethodDecl* method) {
+        if (method->isInstanceMethod()) {
+            auto getter = property->getGetterMethodDecl();
+            auto setter = property->getSetterMethodDecl();
+            if ((getter && methodSelectorsAreEqual(getter, method)) || (setter && methodSelectorsAreEqual(setter, method))) {
+                return true;
+            }
+        }
+        return false;
     }
 
+    /**
+     Returns true if a declared method or property matches the provided method.
+     */
     bool containerDeclaresMethod(ObjCContainerDecl* interface, ObjCMethodDecl* method) {
 
-        auto methodIterator = interface->meth_begin();
-        for (; methodIterator != interface->meth_end(); methodIterator++) {
+        for (auto methodIterator = interface->meth_begin(); methodIterator != interface->meth_end(); methodIterator++) {
             if (methodsAreEqual(*methodIterator, method)) {
                 return true;
             }
         }
         
-        // check the properties
-        auto propertyIterator = interface->prop_begin();
-        for (; propertyIterator != interface->prop_end(); propertyIterator++) {
-            auto getter = propertyIterator->getGetterMethodDecl();
-            auto setter = propertyIterator->getSetterMethodDecl();
-            if ((getter && methodsAreEqual(getter, method)) || (setter && methodsAreEqual(setter, method))) {
+        for (auto property = interface->prop_begin(); property != interface->prop_end(); property++) {
+            if (propertyIncludesMethod(*property, method)) {
                 return true;
             }
         }
@@ -40,17 +53,13 @@ private:
     }
     
     bool protocolDeclaresMethod(ObjCProtocolDecl* interface, ObjCMethodDecl* method) {
-        bool containerCheck = containerDeclaresMethod(interface, method);
-        if (containerCheck) {
+        
+        if (containerDeclaresMethod(interface, method)) {
             return true;
         }
         
-        // check the protocols
-        
-        auto protocolIterator = interface->protocol_begin();
-        for (; protocolIterator != interface->protocol_end(); protocolIterator++) {
-            bool protocolCheck = protocolDeclaresMethod(interface, method);
-            if (protocolCheck) {
+        for (auto protocol = interface->protocol_begin(); protocol != interface->protocol_end(); protocol++) {
+            if (protocolDeclaresMethod(*protocol, method)) {
                 return true;
             }
         }
@@ -59,19 +68,17 @@ private:
     }
 
     bool interfaceDeclaresMethod(ObjCInterfaceDecl* interface, ObjCMethodDecl* method) {
-        bool containerCheck = containerDeclaresMethod(interface, method);
-        if (containerCheck) {
+        
+        if (containerDeclaresMethod(interface, method)) {
             return true;
         }
         
-        // check the protocols
-        auto protocolIterator = interface->protocol_begin();
-        for (; protocolIterator != interface->protocol_end(); protocolIterator++) {
-            bool protocolCheck = protocolDeclaresMethod(*protocolIterator, method);
-            if (protocolCheck) {
+        for (auto protocol = interface->all_referenced_protocol_begin(); protocol != interface->all_referenced_protocol_end(); protocol++) {
+            if (protocolDeclaresMethod(*protocol, method)) {
                 return true;
             }
         }
+        
         return false;
     }
     
@@ -112,17 +119,14 @@ public:
     }
 
     bool VisitObjCImplementationDecl(ObjCImplementationDecl *implementation) {
-        auto iterator = implementation->meth_begin(), iteratorEnd = implementation->meth_end();
-        for (; iterator != iteratorEnd; iterator++) {
-            cerr << (*iterator)->getSelector().getAsString() << " now" << endl;
-            // check interfaces
         
+        for (auto iterator = implementation->meth_begin(); iterator != implementation->meth_end(); iterator++) {
+
             bool declaredPublically = false;
             for (ObjCInterfaceDecl* interface = implementation->getClassInterface(); interface; interface = interface->getSuperClass()) {
                 ObjCInterfaceDecl* definition = interface->getDefinition();
                 if (definition) {
-                    declaredPublically = interfaceDeclaresMethod(definition, *iterator);
-                    if (declaredPublically) {
+                    if (interfaceDeclaresMethod(definition, *iterator)) {
                         break;
                     }
                 }
@@ -132,14 +136,13 @@ public:
             
             bool usedInternally = false;
             bool possibillyUsed = false;
-            auto internalIterator = implementation->meth_begin();
-            for (; internalIterator != implementation->meth_end(); internalIterator++) {
+            for (auto internalIterator = implementation->meth_begin(); internalIterator != implementation->meth_end(); internalIterator++) {
+                
                 if (methodsAreEqual(*internalIterator, *iterator)) { // ignore the same method
                     continue;
                 }
-                Stmt* body = (*internalIterator)->getBody();
-                cerr << (*internalIterator)->getSelector().getAsString() << " body" << endl;
-                vector<Stmt*>* statements = collectMethodStatements(body);
+                
+                vector<Stmt*>* statements = collectMethodStatements((*internalIterator)->getBody());
                 
                 for (auto statementIterator : *statements) {
                     Stmt* statement = statementIterator;
@@ -163,7 +166,6 @@ public:
 //                                    
 //                                }
                                 // probably being used... TODO:
-                                cerr << __LINE__ << " " << (*iterator)->getNameAsString() << " used by " << (*internalIterator)->getNameAsString() << endl;
                                 usedInternally = true;
                             }
                         }
@@ -172,11 +174,9 @@ public:
                         if (messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperInstance && messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperClass) {
                             if ((*iterator)->isInstanceMethod() && messageSend->isInstanceMessage() && methodsAreEqual(*iterator, messageSend->getMethodDecl())) {
                                 // probably being used... TODO:
-                                cerr << __LINE__ << " " << (*iterator)->getNameAsString() << " used by " << (*internalIterator)->getNameAsString() << endl;
                                 usedInternally = true;
                             } else if ((*iterator)->isClassMethod() && messageSend->isClassMessage() && methodsAreEqual(*iterator, messageSend->getMethodDecl())) {
                                 // probably being used... TODO:
-                                cerr << __LINE__ << " " << (*iterator)->getNameAsString() << " used by " << (*internalIterator)->getNameAsString() << endl;
                                 usedInternally = true;
                             }
                         }
@@ -192,8 +192,6 @@ public:
                 } else {
                     addViolation(*iterator, this, string("The method ") + (*iterator)->getNameAsString() + " was defined but not exported or referenced here");
                 }
-            } else {
-                cerr << declaredPublically << usedInternally << " not adding violation to " << (*iterator)->getNameAsString() << endl;
             }
             
         }

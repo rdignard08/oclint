@@ -82,6 +82,106 @@ private:
         return false;
     }
     
+    bool categoryDeclaresMethod(ObjCCategoryDecl* interface, ObjCMethodDecl* method) {
+        
+        if (containerDeclaresMethod(interface, method)) {
+            return true;
+        }
+        
+        for (auto protocol = interface->protocol_begin(); protocol != interface->protocol_end(); protocol++) {
+            if (protocolDeclaresMethod(*protocol, method)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    bool interfaceHierarchyDeclaresMethod(ObjCInterfaceDecl* interface, ObjCMethodDecl* method) {
+        
+        for (; interface; interface = interface->getSuperClass()) {
+            ObjCInterfaceDecl* definition = interface->getDefinition();
+            if (definition) {
+                if (interfaceDeclaresMethod(definition, method)) {
+                    return true;
+                }
+                
+                for (auto category = interface->visible_categories_begin(); category != interface->visible_categories_end(); category++) {
+                    if (categoryDeclaresMethod(*category, method)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    bool selectorExpressionMatchesMethod(ObjCSelectorExpr* statement, ObjCMethodDecl* method) {
+        return statement->getSelector() == method->getSelector();
+    }
+    
+    bool implementationCallsMethod(ObjCImplDecl* implementation, ObjCMethodDecl* method, bool* possibillyUsed) {
+
+        for (auto internalIterator = implementation->meth_begin(); internalIterator != implementation->meth_end(); internalIterator++) {
+            ObjCMethodDecl* testMethod = *internalIterator;
+            
+            
+            if (methodsAreEqual(testMethod, method)) { // ignore the same method
+                continue;
+            }
+            
+            vector<Stmt*>* statements = collectMethodStatements(testMethod->getBody());
+            
+            for (Stmt* statement : *statements) {
+                clang::AbstractConditionalOperator::StmtClass cls = statement->getStmtClass();
+                
+                if (cls == clang::AbstractConditionalOperator::ObjCSelectorExprClass) {
+                    
+                    if (possibillyUsed && !*possibillyUsed) { // does the caller care, and have we not set it to true yet.
+                        *possibillyUsed = selectorExpressionMatchesMethod((ObjCSelectorExpr*)statement, method);
+                    }
+                    
+                } else if (method->isInstanceMethod() && cls == clang::AbstractConditionalOperator::ObjCPropertyRefExprClass) {
+                    ObjCPropertyRefExpr* property = (ObjCPropertyRefExpr*)statement;
+                    
+                    if ((property->isMessagingGetter() && property->getGetterSelector() == method->getSelector()) ||
+                        (property->isMessagingSetter() && property->getSetterSelector() == method->getSelector())) {
+                        if (!property->isSuperReceiver()) {
+//                                Type* receiverType = propertyReference->getReceiverType().getTypePtrOrNull();
+//                                DeclarationName implementingName = implementation->getDeclName();
+//                                Type* implementingClass = implementation->getClassInterface()->getTypeForDecl();
+//                                if (!receiverType) {
+//                                    possibillyUsed = true;
+//                                    break;
+//                                } else {
+//
+//                                }
+// probably being used... TODO:
+                            delete statements;
+                            return true;
+                        }
+                    }
+                    
+                } else if (cls == clang::AbstractConditionalOperator::ObjCMessageExprClass) {
+                    ObjCMessageExpr* messageSend = (ObjCMessageExpr*)statement;
+                    
+                    if (messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperInstance && messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperClass) { // sending to super does not count as an internal reference
+                        if (method->isInstanceMethod() == messageSend->isInstanceMessage() && methodsAreEqual(method, messageSend->getMethodDecl())) {
+                            // probably being used... TODO:
+                            delete statements;
+                            return true;
+                        }
+                    }
+                    
+                }
+            }
+            delete statements;
+        }
+        
+        return false;
+    }
+    
     void helperCollectMethodStatements(Stmt* statement, vector<Stmt*>* statements) {
         if (!statement) return;
         statements->push_back(statement);
@@ -100,7 +200,7 @@ private:
 public:
     virtual const string name() const override
     {
-        return "method is used";
+        return "method usage";
     }
 
     virtual int priority() const override
@@ -117,81 +217,23 @@ public:
     {
         return LANG_OBJC;
     }
-
-    bool VisitObjCImplementationDecl(ObjCImplementationDecl *implementation) {
+    
+    bool VisitObjCMethodDecl(ObjCMethodDecl* method) {
         
-        for (auto iterator = implementation->meth_begin(); iterator != implementation->meth_end(); iterator++) {
-
-            bool declaredPublically = false;
-            for (ObjCInterfaceDecl* interface = implementation->getClassInterface(); interface; interface = interface->getSuperClass()) {
-                ObjCInterfaceDecl* definition = interface->getDefinition();
-                if (definition) {
-                    declaredPublically = interfaceDeclaresMethod(definition, *iterator);
-                    if (declaredPublically) {
-                        break;
-                    }
-                }
-            }
+        DeclContext* context = clang::AccessSpecDecl::castToDeclContext(method)->getLexicalParent();
+        if (clang::ObjCImplDecl::classofKind(context->getDeclKind())) { // if the method is lexically in a category definition or class implementation
             
-            // check if a method in this class calls this
+            bool declaredPublically = interfaceHierarchyDeclaresMethod(method->getClassInterface(), method);
             
-            bool usedInternally = false;
             bool possibillyUsed = false;
-            for (auto internalIterator = implementation->meth_begin(); internalIterator != implementation->meth_end(); internalIterator++) {
-                
-                if (methodsAreEqual(*internalIterator, *iterator)) { // ignore the same method
-                    continue;
-                }
-                
-                vector<Stmt*>* statements = collectMethodStatements((*internalIterator)->getBody());
-                
-                for (auto statementIterator : *statements) {
-                    Stmt* statement = statementIterator;
-                    clang::AbstractConditionalOperator::StmtClass cls = statement->getStmtClass();
-                    if (cls == clang::AbstractConditionalOperator::ObjCSelectorExprClass) {
-                        if (((ObjCSelectorExpr*)statement)->getSelector() == (*iterator)->getSelector()) {
-                            possibillyUsed = true;
-                        }
-                    } else if ((*iterator)->isInstanceMethod() && cls == clang::AbstractConditionalOperator::ObjCPropertyRefExprClass) {
-                        ObjCPropertyRefExpr* propertyReference = (ObjCPropertyRefExpr*)statement;
-                        if ((propertyReference->isMessagingGetter() && propertyReference->getGetterSelector() == (*iterator)->getSelector()) ||
-                            (propertyReference->isMessagingSetter() && propertyReference->getSetterSelector() == (*iterator)->getSelector())) {
-                            if (!propertyReference->isSuperReceiver()) {
-//                                Type* receiverType = propertyReference->getReceiverType().getTypePtrOrNull();
-//                                DeclarationName implementingName = implementation->getDeclName();
-//                                Type* implementingClass = implementation->getClassInterface()->getTypeForDecl();
-//                                if (!receiverType) {
-//                                    possibillyUsed = true;
-//                                    break;
-//                                } else {
-//                                    
-//                                }
-                                // probably being used... TODO:
-                                usedInternally = true;
-                            }
-                        }
-                    } else if (cls == clang::AbstractConditionalOperator::ObjCMessageExprClass) {
-                        ObjCMessageExpr* messageSend = (ObjCMessageExpr*)statement;
-                        if (messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperInstance && messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperClass) {
-                            if ((*iterator)->isInstanceMethod() && messageSend->isInstanceMessage() && methodsAreEqual(*iterator, messageSend->getMethodDecl())) {
-                                // probably being used... TODO:
-                                usedInternally = true;
-                            } else if ((*iterator)->isClassMethod() && messageSend->isClassMessage() && methodsAreEqual(*iterator, messageSend->getMethodDecl())) {
-                                // probably being used... TODO:
-                                usedInternally = true;
-                            }
-                        }
-                    }
-                }
-                delete statements;
-            }
+            bool usedInternally = implementationCallsMethod((ObjCImplDecl*)context, method, &possibillyUsed);
             
             if (!declaredPublically && !usedInternally) {
-                cerr << "adding violation to " << (*iterator)->getNameAsString() << endl;
+                cerr << "adding violation to " << method->getNameAsString() << endl;
                 if (possibillyUsed) {
-                    addViolation(*iterator, this, string("The method ") + (*iterator)->getNameAsString() + " was referenced by @selector(...) but no where else");
+                    addViolation(method, this, string("The method ") + method->getNameAsString() + " was referenced by @selector(...) but no where else");
                 } else {
-                    addViolation(*iterator, this, string("The method ") + (*iterator)->getNameAsString() + " was defined but not exported or referenced here");
+                    addViolation(method, this, string("The method ") + method->getNameAsString() + " was defined but not exported or referenced here");
                 }
             }
             
@@ -199,6 +241,7 @@ public:
         
         return true;
     }
+
 };
 
 

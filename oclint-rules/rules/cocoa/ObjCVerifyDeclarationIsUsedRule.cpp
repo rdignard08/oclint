@@ -9,9 +9,44 @@ using namespace std;
 using namespace clang;
 using namespace oclint;
 
+namespace {
+    class CheckMethodsOutsideClass : public RecursiveASTVisitor<CheckMethodsOutsideClass> {
+    private:
+        ObjCInterfaceDecl* _interface;
+        vector<ObjCMessageExpr*> _violations;
+        
+    public:
+        CheckMethodsInsideClass(ObjCInterfaceDecl* interface) {
+            _interface = interface;
+        }
+        
+        bool VisitObjCMessageExpr(ObjCMessageExpr* expr) {
+            ObjCMethodDecl* method = expr->getMethodDecl();
+            if (!declHasEnforceAttribute(method, _rule)) {
+                return true;
+            }
+            
+            const auto interface = expr->getReceiverInterface();
+            if (!interface) {
+                return true;
+            }
+            
+            if (!isObjCInterfaceClassOrSubclass(&_container, interface->getNameAsString())) {
+                _violations.push_back(expr);
+            }
+            
+            return true;
+        }
+        
+        const vector<ObjCMessageExpr*>& getViolations() const {
+            return _violations;
+        }
+       
+    };
+}
 
-class ObjCVerifyDeclarationIsUsedRule : public AbstractASTVisitorRule<ObjCVerifyDeclarationIsUsedRule>
-{
+
+class ObjCVerifyDeclarationIsUsedRule : public AbstractASTVisitorRule<ObjCVerifyDeclarationIsUsedRule> {
 private:
     bool methodSelectorsAreEqual(ObjCMethodDecl* method1, ObjCMethodDecl* method2) {
         return method1->getSelector() == method2->getSelector();

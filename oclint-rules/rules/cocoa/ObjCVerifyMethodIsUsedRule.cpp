@@ -169,7 +169,7 @@ private:
                                 }
                             } else {
                                 if (possibillyUsed && !*possibillyUsed) {
-                                    possibillyUsed = true;
+                                    *possibillyUsed = true;
                                 }
                             }
                         }
@@ -189,7 +189,7 @@ private:
                                 }
                             } else { // selector matches but we don't know the receiver interface
                                 if (possibillyUsed && !*possibillyUsed) {
-                                    possibillyUsed = true;
+                                    *possibillyUsed = true;
                                 }
                             }
                         }

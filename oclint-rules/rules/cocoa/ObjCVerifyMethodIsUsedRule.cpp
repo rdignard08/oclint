@@ -97,6 +97,17 @@ private:
         return false;
     }
     
+    bool interfaceIsKindOfInterface(ObjCInterfaceDecl* interface, ObjCInterfaceDecl* targetInterface) {
+        
+        for (; interface; interface = interface->getSuperClass()) {
+            if (interface->getName() == targetInterface->getName()) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     bool interfaceHierarchyDeclaresMethod(ObjCInterfaceDecl* interface, ObjCMethodDecl* method) {
         
         for (; interface; interface = interface->getSuperClass()) {
@@ -122,7 +133,7 @@ private:
     }
     
     bool implementationCallsMethod(ObjCImplDecl* implementation, ObjCMethodDecl* method, bool* possibillyUsed) {
-
+        
         for (auto internalIterator = implementation->meth_begin(); internalIterator != implementation->meth_end(); internalIterator++) {
             ObjCMethodDecl* testMethod = *internalIterator;
             
@@ -144,41 +155,49 @@ private:
                     
                 } else if (method->isInstanceMethod() && cls == clang::AbstractConditionalOperator::ObjCPropertyRefExprClass) {
                     ObjCPropertyRefExpr* property = (ObjCPropertyRefExpr*)statement;
-                    
                     if ((property->isMessagingGetter() && property->getGetterSelector() == method->getSelector()) ||
                         (property->isMessagingSetter() && property->getSetterSelector() == method->getSelector())) {
                         if (!property->isSuperReceiver()) {
-//                                Type* receiverType = propertyReference->getReceiverType().getTypePtrOrNull();
-//                                DeclarationName implementingName = implementation->getDeclName();
-//                                Type* implementingClass = implementation->getClassInterface()->getTypeForDecl();
-//                                if (!receiverType) {
-//                                    possibillyUsed = true;
-//                                    break;
-//                                } else {
-//
-//                                }
-// probably being used... TODO:
-                            delete statements;
-                            return true;
+                            ObjCInterfaceDecl* receiver = property->getClassReceiver();
+                            if (receiver) {
+                                receiver = receiver->getDefinition();
+                            }
+                            if (receiver) {
+                                if (interfaceIsKindOfInterface(receiver, implementation->getClassInterface())) {
+                                    delete statements;
+                                    return true;
+                                }
+                            } else {
+                                if (possibillyUsed && !*possibillyUsed) {
+                                    possibillyUsed = true;
+                                }
+                            }
                         }
                     }
-                    
                 } else if (cls == clang::AbstractConditionalOperator::ObjCMessageExprClass) {
                     ObjCMessageExpr* messageSend = (ObjCMessageExpr*)statement;
-                    
                     if (messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperInstance && messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperClass) { // sending to super does not count as an internal reference
                         if (method->isInstanceMethod() == messageSend->isInstanceMessage() && methodsAreEqual(method, messageSend->getMethodDecl())) {
-                            // probably being used... TODO:
-                            delete statements;
-                            return true;
+                            ObjCInterfaceDecl* receiver = messageSend->getReceiverInterface();
+                            if (receiver) {
+                                receiver = receiver->getDefinition(); // unwrap to the true definition (if available)
+                            }
+                            if (receiver) {
+                                if (interfaceIsKindOfInterface(receiver, implementation->getClassInterface())) {
+                                    delete statements;
+                                    return true;
+                                }
+                            } else { // selector matches but we don't know the receiver interface
+                                if (possibillyUsed && !*possibillyUsed) {
+                                    possibillyUsed = true;
+                                }
+                            }
                         }
                     }
-                    
                 }
             }
             delete statements;
         }
-        
         return false;
     }
     

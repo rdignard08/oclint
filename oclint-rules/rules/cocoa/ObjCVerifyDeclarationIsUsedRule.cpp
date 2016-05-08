@@ -16,25 +16,11 @@ namespace {
         vector<ObjCMessageExpr*> _violations;
         
     public:
-        CheckMethodsInsideClass(ObjCInterfaceDecl* interface) {
+        CheckMethodsOutsideClass(ObjCInterfaceDecl* interface) {
             _interface = interface;
         }
         
         bool VisitObjCMessageExpr(ObjCMessageExpr* expr) {
-            ObjCMethodDecl* method = expr->getMethodDecl();
-            if (!declHasEnforceAttribute(method, _rule)) {
-                return true;
-            }
-            
-            const auto interface = expr->getReceiverInterface();
-            if (!interface) {
-                return true;
-            }
-            
-            if (!isObjCInterfaceClassOrSubclass(&_container, interface->getNameAsString())) {
-                _violations.push_back(expr);
-            }
-            
             return true;
         }
         
@@ -295,7 +281,7 @@ public:
         
         DeclContext* context = clang::AccessSpecDecl::castToDeclContext(method)->getLexicalParent();
         auto kind = context->getDeclKind(); // if the method is lexically in a category or interface header
-        if (clang::ObjCCategoryDecl::getKind() == kind || clang::ObjCInterfaceDecl::getKind() == kind) {
+        if (clang::ObjCCategoryDecl::classofKind(kind) || clang::ObjCInterfaceDecl::classofKind(kind)) {
             
             
             

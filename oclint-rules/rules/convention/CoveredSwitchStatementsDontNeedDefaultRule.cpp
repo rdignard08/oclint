@@ -11,7 +11,12 @@ class CoveredSwitchStatementsDontNeedDefaultRule :
 public:
     virtual const string name() const override
     {
-        return "switch statements don't need default when fully covered";
+        return "unnecessary default statement in covered switch statement";
+    }
+
+    virtual const string identifier() const override
+    {
+        return "UnnecessaryDefaultStatement";
     }
 
     virtual int priority() const override
@@ -23,6 +28,51 @@ public:
     {
         return "convention";
     }
+
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.8";
+    }
+
+    virtual const std::string description() const override
+    {
+        return "When a switch statement covers all possible cases, "
+            "a default label is not needed and should be removed. "
+            "If the switch is not fully covered, "
+            "the SwitchStatementsShouldHaveDefault rule will report.";
+    }
+
+    virtual const std::string fileName() const override
+    {
+        return "CoveredSwitchStatementsDontNeedDefaultRule.cpp";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: cpp
+
+    typedef enum {
+        value1 = 0,
+        value2 = 1
+    } eValues;
+
+    void aMethod(eValues a)
+    {
+        switch(a)
+        {
+            case value1:
+                break;
+            case value2:
+                break;
+            default:          // this break is obsolete because all
+                break;        // values of variable a are already covered.
+        }
+    }
+        )rst";
+    }
+#endif
 
     bool VisitSwitchStmt(SwitchStmt *switchStmt)
     {

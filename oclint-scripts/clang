@@ -37,7 +37,7 @@ def build_command(is_release):
         cmd_build.append('LLVM_BUILD_RUNTIME', 'OFF')
     else:
         cmd_build.append('LLVM_BUILD_RUNTIME', 'ON')
-    if environment.is_darwin() and not environment.is_darwin_13():
+    if environment.is_darwin():
         cmd_build.append('CMAKE_CXX_FLAGS', '-std=c++11 -stdlib=libc++ ${CMAKE_CXX_FLAGS}', True)
     cmd_build.append('CMAKE_INSTALL_PREFIX', path.build.clang_install_dir, environment.is_mingw32())
     return cmd_build.str()
@@ -55,6 +55,14 @@ def build_module(is_release, multiple_thread):
     process.call('make install')
     path.cd(current_dir)
 
+def copy_cpp_headers():
+    install_dir = path.build.clang_install_dir
+    cpp_dir = os.path.join(install_dir, 'include', 'c++')
+    if environment.is_darwin() and not path.is_dir(cpp_dir):
+        xcode_root = subprocess.check_output(['xcode-select', '--print-path']).strip()
+        xcode_cpp_headers = os.path.join(xcode_root, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'include', 'c++')
+        path.cp_r(xcode_cpp_headers, cpp_dir)
+
 def svn_checkout(url, prefix, root_dir):
     current_dir = os.getcwd()
     path.cd(root_dir)
@@ -71,14 +79,14 @@ def svn_update(root_dir, rev):
     path.cd(current_dir)
 
 def checkout_clang(branch_name):
-    if os.path.isdir(path.source.clang_dir):
+    if path.is_dir(path.source.clang_dir):
         sys.exit('Clang folder exists!')
     svn_checkout(path.url.llvm + branch_name, 'llvm', path.root_dir)
     svn_checkout(path.url.clang + branch_name, 'clang', os.path.join(path.root_dir, 'llvm', 'tools'))
     svn_checkout(path.url.clang_rt + branch_name, 'compiler-rt', os.path.join(path.root_dir, 'llvm', 'projects'))
 
 def update_clang(rev):
-    if not os.path.isdir(path.source.clang_dir):
+    if not path.is_dir(path.source.clang_dir):
         sys.exit('Clang folder does not exist!')
     svn_update(os.path.join(path.root_dir, 'llvm'), rev)
     svn_update(os.path.join(path.root_dir, 'llvm', 'tools', 'clang'), rev)
@@ -88,10 +96,14 @@ def setup_prebuilt_binary():
     build_path = path.build.clang_build_dir
     install_path = path.build.clang_install_dir
 
-    if environment.is_darwin():
-        binary_url = path.url.clang_prebuilt_binary_for_darwin
+    if environment.is_xcode8():
+        binary_url = path.url.clang_prebuilt_binary_for_xcode_8
+    elif environment.is_darwin():
+        binary_url = path.url.clang_prebuilt_binary_for_xcode_7
+    elif environment.is_linux() and environment.linux_distribution()[1] == '16.04':
+        binary_url = path.url.clang_prebuilt_binary_for_ubuntu_lts_16
     else:
-        binary_url = path.url.clang_prebuilt_binary_for_ubuntu_lts
+        binary_url = path.url.clang_prebuilt_binary_for_ubuntu_lts_14
 
     current_dir = os.getcwd()
     path.mkdir_p(build_path)
@@ -99,24 +111,6 @@ def setup_prebuilt_binary():
     process.call('curl -o prebuilt.tar.xz ' + binary_url)
     path.mkdir_p(install_path)
     process.call('tar xf prebuilt.tar.xz -C ' + install_path + ' --strip-components=1')
-
-    # A workaround for mac prebuilt binary
-    if environment.is_darwin:
-        correct_header = """get_filename_component(_LLVM_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(LLVM_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_INSTALL_PREFIX}" PATH)
-get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_INSTALL_PREFIX}" PATH)
-get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_INSTALL_PREFIX}" PATH)
-set(_LLVM_LIBRARY_DIR "${LLVM_INSTALL_PREFIX}/lib")"""
-        problematic_file_path = install_path + "/share/llvm/cmake/LLVMConfig.cmake"
-        file_read_ptr = open(problematic_file_path, 'r')
-        file_text = file_read_ptr.read()
-        file_read_ptr.close()
-        new_text = correct_header + "\n\n\n" + file_text
-        file_write_ptr = open(problematic_file_path, 'w')
-        file_write_ptr.write(new_text)
-        file_write_ptr.close()
-
     path.cd(current_dir)
 
 if args.task_name == 'checkout' or args.task_name == 'co':
@@ -138,3 +132,5 @@ if args.task_name == 'build':
     if args.clean:
         clean_module()
     build_module(args.release, str(multiple_thread))
+    if environment.is_darwin():
+        copy_cpp_headers()

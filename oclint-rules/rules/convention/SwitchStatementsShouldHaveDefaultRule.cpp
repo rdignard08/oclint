@@ -11,7 +11,12 @@ class SwitchStatementsShouldHaveDefaultRule :
 public:
     virtual const string name() const override
     {
-        return "switch statements should have default";
+        return "missing default in switch statements";
+    }
+
+    virtual const string identifier() const override
+    {
+        return "MissingDefaultStatement";
     }
 
     virtual int priority() const override
@@ -23,6 +28,41 @@ public:
     {
         return "convention";
     }
+
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.6";
+    }
+
+    virtual const std::string description() const override
+    {
+        return "Switch statements should have a default statement.";
+    }
+
+    virtual const std::string fileName() const override
+    {
+        return "SwitchStatementsShouldHaveDefaultRule.cpp";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: cpp
+
+    void example(int a)
+    {
+        switch (a) {
+            case 1:
+                break;
+            case 2:
+                break;
+            // should have a default
+        }
+    }
+        )rst";
+    }
+#endif
 
     bool VisitSwitchStmt(SwitchStmt *switchStmt)
     {

@@ -40,12 +40,12 @@ public:
 
     virtual const string name() const override
     {
-        return "verify prohibited call";
+        return "calling prohibited method";
     }
 
     virtual const string attributeName() const override
     {
-        return "prohibited call";
+        return "prohibited method";
     }
 
     virtual int priority() const override
@@ -58,6 +58,43 @@ public:
         return "cocoa";
     }
 
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.10.1";
+    }
+
+    virtual const std::string description() const override
+    {
+         return "When a method is declared with "
+            "``__attribute__((annotate(\"oclint:enforce[prohibited method]\")))`` "
+            "annotation, all of its usages will be prohibited.";
+    }
+
+    virtual const std::string fileName() const override
+    {
+        return "ObjCVerifyProhibitedCallRule.cpp";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: objective-c
+
+    @interface A : NSObject
+    - (void)foo __attribute__((annotate("oclint:enforce[prohibited method]")));
+    @end
+
+    @implementation A
+    - (void)foo {
+    }
+    - (void)bar {
+        [self foo]; // calling method `foo` is prohibited.
+    }
+    @end
+    )rst";
+    }
+#endif
 };
 
 

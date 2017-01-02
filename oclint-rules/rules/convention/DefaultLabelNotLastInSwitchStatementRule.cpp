@@ -11,7 +11,12 @@ class DefaultLabelNotLastInSwitchStatementRule :
 public:
     virtual const string name() const override
     {
-        return "default label not last in switch statement";
+        return "ill-placed default label in switch statement";
+    }
+
+    virtual const string identifier() const override
+    {
+        return "MisplacedDefaultLabel";
     }
 
     virtual int priority() const override
@@ -23,6 +28,43 @@ public:
     {
         return "convention";
     }
+
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.6";
+    }
+
+    virtual const std::string description() const override
+    {
+        return "It is very confusing when default label is not the last label "
+            "in a switch statement.";
+    }
+
+    virtual const std::string fileName() const override
+    {
+        return "DefaultLabelNotLastInSwitchStatementRule.cpp";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: cpp
+
+    void example(int a)
+    {
+        switch (a) {
+            case 1:
+                break;
+            default:  // the default case should be last
+                break;
+            case 2:
+                break;
+        }
+    }
+        )rst";
+    }
+#endif
 
     bool VisitSwitchStmt(SwitchStmt *switchStmt)
     {

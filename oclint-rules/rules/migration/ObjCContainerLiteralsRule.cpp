@@ -11,7 +11,7 @@ class ObjCContainerLiteralsRule : public AbstractASTVisitorRule<ObjCContainerLit
 public:
     virtual const string name() const override
     {
-        return "replace with container literal";
+        return "use container literal";
     }
 
     virtual int priority() const override
@@ -28,6 +28,40 @@ public:
     {
         return LANG_OBJC;
     }
+
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.7";
+    }
+
+    virtual const std::string description() const override
+    {
+        return "This rule locates the places that can be migrated to the "
+            "new Objective-C literals with container literals.";
+    }
+
+    virtual const std::string fileName() const override
+    {
+        return "ObjCContainerLiteralsRule.cpp";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: objective-c
+
+    void aMethod()
+    {
+        NSArray *a = [NSArray arrayWithObjects:@1, @2, @3, nil];
+        // NSArray *a = @[ @1, @2, @3 ];
+
+        NSDictionary *d = [NSDictionary dictionaryWithObjects:@[@2,@4] forKeys:@[@1,@3]];
+        // NSDictionary *d = @{ @1 : @2, @3 : @4 };
+    }
+        )rst";
+    }
+#endif
 
     bool VisitObjCMessageExpr(ObjCMessageExpr *objCMsgExpr)
     {

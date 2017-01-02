@@ -8,6 +8,27 @@ using namespace oclint;
 
 class PMDReporter : public Reporter
 {
+private:
+    std::string xmlEscape(const std::string &data)
+    {
+        std::string output;
+        output.reserve(data.size());
+        for (const auto &c : data)
+        {
+            switch(c)
+            {
+                case '<':
+                    output += "&lt;";
+                    break;
+                case '>':
+                    output += "&gt;";
+                    break;
+                default:
+                    output += c;
+            }
+        }
+        return output;
+    }
 public:
     virtual const std::string name() const override
     {
@@ -20,6 +41,11 @@ public:
         for (const auto& violation : results->allViolations())
         {
             writeViolation(out, violation);
+            out << std::endl;
+        }
+        for (const auto& violation : results->allCheckerBugs())
+        {
+            writeCheckerBug(out, violation);
             out << std::endl;
         }
         writeFooter(out);
@@ -53,6 +79,23 @@ public:
         }
         out << ">" << std::endl;
         out << violation.message << std::endl;
+        out << "</violation>" << std::endl;
+        out << "</file>" << std::endl;
+    }
+
+    void writeCheckerBug(std::ostream &out, const Violation &violation)
+    {
+        out << "<file name=\"" << violation.path << "\">" << std::endl;
+        out << "<violation ";
+        out << "begincolumn=\"" << violation.startColumn << "\" ";
+        out << "endcolumn=\"" << violation.endColumn << "\" ";
+        out << "beginline=\"" << violation.startLine << "\" ";
+        out << "endline=\"" << violation.endLine << "\" ";
+        out << "priority=\"" << 2 << "\" ";
+        out << "rule=\"" << "clang static analyzer" << "\" ";
+        out << "ruleset=\"" << "cland static analyzer" << "\" ";
+        out << ">" << std::endl;
+        out << xmlEscape(violation.message) << std::endl;
         out << "</violation>" << std::endl;
         out << "</file>" << std::endl;
     }

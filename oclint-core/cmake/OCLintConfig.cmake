@@ -1,5 +1,6 @@
 SET(CMAKE_DISABLE_SOURCE_CHANGES ON)
 SET(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+set(CMAKE_MACOSX_RPATH ON)
 SET(CMAKE_BUILD_TYPE None)
 IF (${CMAKE_SYSTEM_NAME} MATCHES "Win")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_LINKER_FLAGS} -fno-rtti")
@@ -13,7 +14,6 @@ SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_CXX_LINKER_FLAGS} -fno-rtti")
 
 IF(APPLE)
     SET(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++ ${CMAKE_CXX_FLAGS}")
-    INCLUDE_DIRECTORIES(${OSX_DEVELOPER_ROOT}/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1)
 ELSEIF(MINGW)
     SET(CMAKE_CXX_FLAGS "-std=gnu++11 ${CMAKE_CXX_FLAGS}")
 ELSE()
@@ -24,8 +24,8 @@ ELSE()
 ENDIF()
 
 IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -mmacosx-version-min=10.11")
-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mmacosx-version-min=10.11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -mmacosx-version-min=10.12")
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mmacosx-version-min=10.12")
 ENDIF()
 
 IF(OCLINT_BUILD_TYPE STREQUAL "Release")
@@ -38,14 +38,18 @@ ENDIF()
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
-SET(OCLINT_VERSION_RELEASE "0.10.2")
+SET(OCLINT_VERSION_RELEASE "0.11.1")
 
 IF(LLVM_ROOT)
     IF(NOT EXISTS ${LLVM_ROOT}/include/llvm)
         MESSAGE(FATAL_ERROR "LLVM_ROOT (${LLVM_ROOT}) is not a valid LLVM install. Could not find ${LLVM_ROOT}/include/llvm")
     ENDIF()
     MESSAGE("LLVM_ROOT: ${LLVM_ROOT}")
-    SET(LLVM_DIR ${LLVM_ROOT}/share/llvm/cmake)
+    IF(EXISTS ${LLVM_ROOT}/lib/cmake/llvm)
+        SET(LLVM_DIR ${LLVM_ROOT}/lib/cmake/llvm)
+    ELSE()
+        SET(LLVM_DIR ${LLVM_ROOT}/share/llvm/cmake)
+    ENDIF()
     SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${LLVM_DIR}")
     INCLUDE(LLVMConfig)
 ELSE()
@@ -82,8 +86,8 @@ IF(TEST_BUILD)
         --coverage
         )
     INCLUDE_DIRECTORIES(
-        ${GOOGLETEST_SRC}/include
-        ${GOOGLETEST_SRC}/gtest/include
+        ${GOOGLETEST_SRC}/googlemock/include
+        ${GOOGLETEST_SRC}/googletest/include
         )
     LINK_DIRECTORIES(${GOOGLETEST_BUILD})
 
@@ -97,10 +101,14 @@ IF(TEST_BUILD)
             SET(PROFILE_RT_LIBS --coverage)
         ELSE()
             IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                SET(PROFILE_RT_LIBS clang_rt.profile-x86_64)
+                SET(PROFILE_RT_LIBS clang_rt.profile-x86_64 --coverage)
             ELSE()
-                SET(PROFILE_RT_LIBS clang_rt.profile-i386)
+                SET(PROFILE_RT_LIBS clang_rt.profile-i386 --coverage)
             ENDIF()
         ENDIF()
     ENDIF()
+ENDIF()
+
+IF(DOC_GEN_BUILD)
+    SET(CMAKE_CXX_FLAGS "-DDOCGEN ${CMAKE_CXX_FLAGS}")
 ENDIF()

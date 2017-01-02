@@ -26,6 +26,11 @@ class MissingBreakInSwitchStatementRule :
             return false;
         }
 
+        bool VisitContinueStmt(ContinueStmt *)
+        {
+            return false;
+        }
+
         bool VisitCXXThrowExpr(CXXThrowExpr *)
         {
             return false;
@@ -53,6 +58,38 @@ public:
         return "convention";
     }
 
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.6";
+    }
+
+    virtual const std::string description() const override
+    {
+        return "A switch statement without a break statement has a very large chance "
+            "to contribute a bug.";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: cpp
+
+    void example(int a)
+    {
+        switch (a) {
+            case 1:
+                break;
+            case 2:
+                // do something
+            default:
+                break;
+        }
+    }
+        )rst";
+    }
+#endif
+
     bool isSwitchCase(Stmt *stmt)
     {
         return stmt && isa<SwitchCase>(stmt);
@@ -61,7 +98,10 @@ public:
     bool isBreakingPoint(Stmt *stmt)
     {
         return stmt && (isa<BreakStmt>(stmt) ||
-                isa<ReturnStmt>(stmt) || isa<CXXThrowExpr>(stmt) || isa<ObjCAtThrowStmt>(stmt));
+                        isa<ReturnStmt>(stmt) ||
+                        isa<CXXThrowExpr>(stmt) ||
+                        isa<ContinueStmt>(stmt) ||
+                        isa<ObjCAtThrowStmt>(stmt));
     }
 
     bool VisitSwitchStmt(SwitchStmt *switchStmt)

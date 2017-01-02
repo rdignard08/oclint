@@ -3,8 +3,13 @@
 ./clang prebuilt
 if [ "$1" = "build" ]
 then
+    ./countly co
+    ./countly build
     ./build
     ./bundle -archive
+elif [ "$1" = "docgen" ]
+then
+    ./docGen
 else
     ./googleTest co
     ./googleTest build
@@ -13,7 +18,7 @@ else
     shift
     for dep in $*
     do
-        ./build "$dep"
+        ./test "$dep" -as-dep
     done
     ./test "$MODULE"
 fi

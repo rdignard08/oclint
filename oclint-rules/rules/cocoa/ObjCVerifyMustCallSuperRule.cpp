@@ -59,7 +59,12 @@ private:
 public:
     virtual const string name() const override
     {
-        return "must call super";
+        return "missing call to base method";
+    }
+
+    virtual const string attributeName() const override
+    {
+        return "base method";
     }
 
     virtual int priority() const override
@@ -76,6 +81,48 @@ public:
     {
         return LANG_OBJC;
     }
+
+#ifdef DOCGEN
+    virtual const std::string since() const override
+    {
+        return "0.8";
+    }
+
+    virtual const std::string description() const override
+    {
+        return "When a method is declared with "
+            "``__attribute__((annotate(\"oclint:enforce[base method]\")))`` annotation, "
+            "all of its implementations (including its own and its sub classes) "
+            "must call the method implementation in super class.";
+    }
+
+    virtual const std::string fileName() const override
+    {
+        return "ObjCVerifyMustCallSuperRule.cpp";
+    }
+
+    virtual const std::string example() const override
+    {
+        return R"rst(
+.. code-block:: objective-c
+
+    @interface UIView (OCLintStaticChecks)
+    - (void)layoutSubviews __attribute__((annotate("oclint:enforce[base method]")));
+    @end
+
+    @interface CustomView : UIView
+    @end
+
+    @implementation CustomView
+
+    - (void)layoutSubviews {
+        // [super layoutSubviews]; is enforced here
+    }
+
+    @end
+    )rst";
+    }
+#endif
 
     bool VisitObjCMethodDecl(ObjCMethodDecl* decl) {
         // Save the method name

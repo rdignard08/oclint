@@ -15,22 +15,65 @@ DiagnosticDispatcher::DiagnosticDispatcher(bool runClangChecker)
     _isCheckerCustomer = runClangChecker;
 }
 
+struct LocalSourceLocation
+{
+    int line;
+    int column;
+    std::string filename;
+};
+
+LocalSourceLocation emptySourceLocation()
+{
+    LocalSourceLocation sourceLoc;
+    sourceLoc.line = 0;
+    sourceLoc.column = 0;
+    sourceLoc.filename = "";
+    return sourceLoc;
+}
+
+LocalSourceLocation populateSourceLocation(const clang::Diagnostic &diagnosticInfo)
+{
+    LocalSourceLocation sourceLoc = emptySourceLocation();
+
+    if (!diagnosticInfo.hasSourceManager()) {
+        return sourceLoc;
+    }
+
+    clang::SourceManager *sourceManager = &diagnosticInfo.getSourceManager();
+    clang::SourceLocation location = diagnosticInfo.getLocation();
+
+    llvm::StringRef sourceFilename = sourceManager->getFilename(location);
+    // If we didn't match, and we have a macro location try to expand it
+    if (sourceFilename.empty() && location.isMacroID())
+    {
+        clang::SourceLocation macroLocation = sourceManager->getExpansionLoc(location);
+        llvm::StringRef expansionFilename = sourceManager->getFilename(macroLocation);
+        sourceLoc.filename = expansionFilename.str();
+    }
+    else
+    {
+        sourceLoc.filename = sourceFilename.str();
+    }
+
+    sourceLoc.line = sourceManager->getPresumedLineNumber(location);
+    sourceLoc.column = sourceManager->getPresumedColumnNumber(location);
+
+    return sourceLoc;
+}
+
 void DiagnosticDispatcher::HandleDiagnostic(clang::DiagnosticsEngine::Level diagnosticLevel,
     const clang::Diagnostic &diagnosticInfo)
 {
     clang::DiagnosticConsumer::HandleDiagnostic(diagnosticLevel, diagnosticInfo);
 
-    clang::SourceLocation location = diagnosticInfo.getLocation();
-    clang::SourceManager *sourceManager = &diagnosticInfo.getSourceManager();
-    llvm::StringRef filename = sourceManager->getFilename(location);
-    int line = sourceManager->getPresumedLineNumber(location);
-    int column = sourceManager->getPresumedColumnNumber(location);
-
     clang::SmallString<100> diagnosticMessage;
     diagnosticInfo.FormatDiagnostic(diagnosticMessage);
 
-    Violation violation(nullptr, filename.str(), line, column, 0, 0,
-                        diagnosticMessage.str().str());
+    LocalSourceLocation localSourceLocation = populateSourceLocation(diagnosticInfo);
+
+    Violation violation(nullptr,
+        localSourceLocation.filename, localSourceLocation.line, localSourceLocation.column,
+        0, 0, diagnosticMessage.str().str());
 
     ResultCollector *results = ResultCollector::getInstance();
     if (_isCheckerCustomer)

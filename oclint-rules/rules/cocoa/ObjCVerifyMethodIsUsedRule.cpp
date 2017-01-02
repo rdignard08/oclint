@@ -98,12 +98,26 @@ private:
     }
     
     bool interfaceIsKindOfInterface(ObjCInterfaceDecl* interface, ObjCInterfaceDecl* targetInterface) {
-        
-        for (; interface; interface = interface->getSuperClass()) {
-            if (interface->getName() == targetInterface->getName()) {
+        if (!targetInterface) { // no target; hopeless
+            return false;
+        }
+
+        if (!interface) {
+            return true; // no interface can be.  should raise exception.
+        }
+
+        return true; // TODO: totally fucking broken please fix
+
+        while (interface) {
+            
+            if (interface->getName().str() == targetInterface->getName().str()) {
                 return true;
             }
-        }
+            if (interface->getName().str() == string("NSObject") || interface->getName().str() == string("NSProxy")) {
+                break;
+            }
+            interface = interface->getSuperClass();
+        }        
         
         return false;
     }
@@ -143,12 +157,13 @@ private:
             }
             
             vector<Stmt*>* statements = collectMethodStatements(testMethod->getBody());
+
+            bool ret = false;
             
             for (Stmt* statement : *statements) {
                 clang::AbstractConditionalOperator::StmtClass cls = statement->getStmtClass();
-                
+
                 if (cls == clang::AbstractConditionalOperator::ObjCSelectorExprClass) {
-                    
                     if (possibillyUsed && !*possibillyUsed) { // does the caller care, and have we not set it to true yet.
                         *possibillyUsed = selectorExpressionMatchesMethod((ObjCSelectorExpr*)statement, method);
                     }
@@ -159,16 +174,22 @@ private:
                         (property->isMessagingSetter() && property->getSetterSelector() == method->getSelector())) {
                         if (!property->isSuperReceiver()) {
                             ObjCInterfaceDecl* receiver = property->getClassReceiver();
-                            if (receiver) {
+                            if (receiver && !receiver->isThisDeclarationADefinition()) {
                                 receiver = receiver->getDefinition();
                             }
                             if (receiver) {
-                                if (interfaceIsKindOfInterface(receiver, implementation->getClassInterface())) {
-                                    delete statements;
-                                    return true;
+                                if (true) {
+                                    if (interfaceIsKindOfInterface(receiver, implementation->getClassInterface())) {
+                                        ret = true;
+                                        break;
+                                    }
+                                } else {
+                                    if (possibillyUsed) {
+                                        *possibillyUsed = true;
+                                    }
                                 }
                             } else {
-                                if (possibillyUsed && !*possibillyUsed) {
+                                if (possibillyUsed) {
                                     *possibillyUsed = true;
                                 }
                             }
@@ -179,7 +200,7 @@ private:
                     if (messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperInstance && messageSend->getReceiverKind() != clang::ObjCMessageExpr::SuperClass) { // sending to super does not count as an internal reference
                         if (method->isInstanceMethod() == messageSend->isInstanceMessage() && methodsAreEqual(method, messageSend->getMethodDecl())) {
                             ObjCInterfaceDecl* receiver = messageSend->getReceiverInterface();
-                            if (receiver) {
+                            if (receiver && !receiver->isThisDeclarationADefinition()) {
                                 receiver = receiver->getDefinition(); // unwrap to the true definition (if available)
                             }
                             if (receiver) {
@@ -197,6 +218,9 @@ private:
                 }
             }
             delete statements;
+            if (ret) {
+                return ret;
+            }
         }
         return false;
     }

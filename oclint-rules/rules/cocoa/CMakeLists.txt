@@ -1,4 +1,5 @@
 SET(LIST_OF_RULES
+    ObjCVerifySafeObjects
     ObjCVerifyIsEqualHash
     ObjCVerifyMethodIsUsed
     ObjCVerifyDeclarationIsUsed

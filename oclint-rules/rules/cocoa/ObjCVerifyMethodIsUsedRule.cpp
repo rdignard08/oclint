@@ -98,6 +98,8 @@ private:
     }
     
     bool interfaceIsKindOfInterface(ObjCInterfaceDecl* interface, ObjCInterfaceDecl* targetInterface) {
+        cerr << "left side " << interface->getName().str() << " right side " << targetInterface->getName().str() << endl;
+
         if (!targetInterface) { // no target; hopeless
             return false;
         }
@@ -106,7 +108,7 @@ private:
             return true; // no interface can be.  should raise exception.
         }
 
-        return true; // TODO: totally fucking broken please fix
+//        return true; // TODO: totally fucking broken please fix
 
         while (interface) {
             
@@ -260,30 +262,23 @@ public:
     {
         return LANG_OBJC;
     }
-    
-    bool VisitObjCMethodDecl(ObjCMethodDecl* method) {
-        
-        DeclContext* context = clang::AccessSpecDecl::castToDeclContext(method)->getLexicalParent();
-        if (clang::ObjCImplDecl::classofKind(context->getDeclKind())) { // if the method is lexically in a category definition or class implementation
-            
-            bool declaredPublically = interfaceHierarchyDeclaresMethod(method->getClassInterface(), method);
-            
+
+    bool VisitObjCImplDecl(ObjCImplDecl *implementation) {
+        for (auto method = implementation->meth_begin(); method != implementation->meth_end(); method++) {
+            bool declaredPublically = interfaceHierarchyDeclaresMethod(implementation->getClassInterface(), *method);
             bool possibillyUsed = false;
-            bool usedInternally = implementationCallsMethod((ObjCImplDecl*)context, method, &possibillyUsed);
-            
+            bool usedInternally = implementationCallsMethod(implementation, *method, &possibillyUsed);
             if (!declaredPublically && !usedInternally) {
-                cerr << "adding violation to " << method->getNameAsString() << endl;
+                cerr << "violation on " << (*method)->getNameAsString() << endl;
                 if (possibillyUsed) {
-                    addViolation(method, this, string("The method ") + method->getNameAsString() + " was referenced by @selector(...) but no where else");
+                    cerr << "possibily used by @selector(...)" << endl;
                 } else {
-                    addViolation(method, this, string("The method ") + method->getNameAsString() + " was defined but not exported or referenced here");
+                    addViolation(*method, this, string("The method ") + method->getNameAsString() + " was defined but not exported or referenced here");   
                 }
             }
-            
         }
-        
         return true;
-    }
+    }    
 
 };
 
